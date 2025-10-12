@@ -32,16 +32,28 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
     // Process specialties - convert to array if string
-    let specialties = registerDto.specialties;
-    if (typeof specialties === 'string') {
-      specialties = specialties.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    let processedSpecialties: string[] | null = null;
+    if (registerDto.specialties) {
+      if (typeof registerDto.specialties === 'string') {
+        processedSpecialties = registerDto.specialties.split(',').map(s => s.trim()).filter(s => s.length > 0);
+      } else if (Array.isArray(registerDto.specialties)) {
+        processedSpecialties = registerDto.specialties;
+      }
     }
 
     // Create user
     const user = this.userRepository.create({
-      ...registerDto,
+      email: registerDto.email,
       password: hashedPassword,
-      specialties: specialties || undefined,
+      name: registerDto.name,
+      userHandle: registerDto.userHandle,
+      phone: registerDto.phone || null,
+      whatsappNumber: registerDto.whatsappNumber || null,
+      company: registerDto.company || null,
+      role: registerDto.role || 'agent',
+      bio: registerDto.bio || null,
+      ubicacion: registerDto.ubicacion || null,
+      specialties: processedSpecialties,
     });
 
     await this.userRepository.save(user);
