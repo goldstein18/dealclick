@@ -6,7 +6,7 @@ import { PropertyCard, RequirementCard } from "../../components";
 import { useFeed } from "../../contexts/FeedContext";
 
 export default function FeedScreen() {
-  const { properties, requirements } = useFeed();
+  const { properties, requirements, loading, error, refreshFeed } = useFeed();
   const [activeSegment, setActiveSegment] = useState('properties');
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
@@ -167,7 +167,23 @@ export default function FeedScreen() {
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {activeSegment === 'properties' ? (
+        {loading ? (
+          // Loading State
+          <View style={styles.loadingContainer}>
+            <Ionicons name="refresh" size={32} color="#666" />
+            <Text style={styles.loadingText}>Cargando datos...</Text>
+          </View>
+        ) : error ? (
+          // Error State
+          <View style={styles.errorContainer}>
+            <Ionicons name="alert-circle" size={32} color="#ff6b6b" />
+            <Text style={styles.errorText}>Error al cargar los datos</Text>
+            <Text style={styles.errorSubtext}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={refreshFeed}>
+              <Text style={styles.retryButtonText}>Reintentar</Text>
+            </TouchableOpacity>
+          </View>
+        ) : activeSegment === 'properties' ? (
           // Sección de Propiedades
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
@@ -180,13 +196,21 @@ export default function FeedScreen() {
               </TouchableOpacity>
             </View>
             
-            {properties.map((property) => (
-              <PropertyCard 
-                key={property.id}
-                property={property}
-                onPress={() => router.push(`/property/${property.id}`)}
-              />
-            ))}
+            {properties.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="home-outline" size={48} color="#ccc" />
+                <Text style={styles.emptyText}>No hay propiedades disponibles</Text>
+                <Text style={styles.emptySubtext}>Sé el primero en publicar una propiedad</Text>
+              </View>
+            ) : (
+              properties.map((property) => (
+                <PropertyCard 
+                  key={property.id}
+                  property={property}
+                  onPress={() => router.push(`/property/${property.id}`)}
+                />
+              ))
+            )}
           </View>
         ) : (
           // Sección de Requerimientos
@@ -201,13 +225,21 @@ export default function FeedScreen() {
               </TouchableOpacity>
             </View>
             
-            {requirements.map((requirement) => (
-              <RequirementCard 
-                key={requirement.id}
-                requirement={requirement}
-                onUserPress={() => console.log('User pressed:', requirement.id)}
-              />
-            ))}
+            {requirements.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="document-text-outline" size={48} color="#ccc" />
+                <Text style={styles.emptyText}>No hay requerimientos disponibles</Text>
+                <Text style={styles.emptySubtext}>Sé el primero en publicar un requerimiento</Text>
+              </View>
+            ) : (
+              requirements.map((requirement) => (
+                <RequirementCard 
+                  key={requirement.id}
+                  requirement={requirement}
+                  onUserPress={() => console.log('User pressed:', requirement.id)}
+                />
+              ))
+            )}
           </View>
         )}
       </ScrollView>
@@ -803,5 +835,65 @@ const styles = StyleSheet.create({
   dropdownOptionTextSelected: {
     color: '#fff',
     fontWeight: '600',
+  },
+  // Loading and Error States
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 16,
+  },
+  errorContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 20,
+  },
+  errorText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#ff6b6b',
+    marginTop: 16,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  errorSubtext: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  retryButton: {
+    backgroundColor: '#000',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 20,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#666',
+    marginTop: 16,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
   },
 }); 

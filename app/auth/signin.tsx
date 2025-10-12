@@ -1,14 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { authAPI } from '../../services/api';
 
 export default function SignInScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isBiometricSupported, setIsBiometricSupported] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -38,7 +41,7 @@ export default function SignInScreen() {
     }
   };
 
-  const handleSignIn = () => {
+  const handleSignIn = async () => {
     if (!email.trim()) {
       Alert.alert('Error', 'Por favor ingresa tu email');
       return;
@@ -49,9 +52,46 @@ export default function SignInScreen() {
       return;
     }
 
-    // Here you would typically authenticate with your backend
-    // For now, we'll just navigate to the main app
-    router.replace('/(tabs)');
+    try {
+      setLoading(true);
+      
+      // Debug: Log the data being sent
+      console.log('Attempting login with:', { email: email.toLowerCase().trim(), password: '***' });
+      
+      // Login with backend
+      const response = await authAPI.login(email.toLowerCase().trim(), password);
+      
+      // Token is automatically saved in authAPI.login
+      // Save user data for quick access
+      await AsyncStorage.setItem('currentUser', JSON.stringify(response.user));
+      
+      Alert.alert(
+        '¡Bienvenido!',
+        `Hola ${response.user.name}`,
+        [
+          {
+            text: 'Continuar',
+            onPress: () => router.replace('/(tabs)'),
+          },
+        ]
+      );
+    } catch (error: any) {
+      console.error('Login error:', error);
+      
+      let errorMessage = 'No se pudo iniciar sesión. Por favor intenta de nuevo.';
+      
+      if (error.response?.status === 401) {
+        errorMessage = 'Email o contraseña incorrectos';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message === 'Network Error') {
+        errorMessage = 'Sin conexión a internet. Verifica tu conexión.';
+      }
+      
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -85,6 +125,8 @@ export default function SignInScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
+              textContentType="none"
+              autoComplete="off"
             />
           </View>
 
@@ -99,6 +141,12 @@ export default function SignInScreen() {
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
+                textContentType="oneTimeCode"
+                autoComplete="off"
+                passwordRules=""
+                autoCorrect={false}
+                spellCheck={false}
+                importantForAutofill="no"
               />
               <TouchableOpacity 
                 style={styles.eyeButton}
@@ -119,8 +167,16 @@ export default function SignInScreen() {
           </TouchableOpacity>
 
           {/* Sign In Button */}
-          <TouchableOpacity style={styles.signInButton} onPress={handleSignIn}>
-            <Text style={styles.signInButtonText}>Iniciar sesión</Text>
+          <TouchableOpacity 
+            style={[styles.signInButton, loading && styles.signInButtonDisabled]} 
+            onPress={handleSignIn}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.signInButtonText}>Iniciar sesión</Text>
+            )}
           </TouchableOpacity>
 
           {/* Biometric Auth Button */}
@@ -137,7 +193,7 @@ export default function SignInScreen() {
                 onPress={handleBiometricAuth}
               >
                 <Ionicons 
-                  name={Platform.OS === 'ios' ? 'face-id' : 'finger-print'} 
+                  name="finger-print" 
                   size={24} 
                   color="#000" 
                 />
@@ -258,6 +314,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 6,
+  },
+  signInButtonDisabled: {
+    backgroundColor: '#666',
+    opacity: 0.7,
   },
   signInButtonText: {
     color: '#fff',

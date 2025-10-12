@@ -16,9 +16,12 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { useFeed } from "../contexts/FeedContext";
+import { propertiesAPI } from "../services/api";
 import { uploadImages } from "../services/storage.service";
 
 export default function PublishPropertyScreen() {
+  const { addProperty } = useFeed();
   const [images, setImages] = useState<string[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -109,7 +112,7 @@ export default function PublishPropertyScreen() {
       setUploadProgress(0);
 
       // Get auth token
-      const token = await AsyncStorage.getItem('authToken');
+      const token = await AsyncStorage.getItem('auth_token');
       if (!token) {
         Alert.alert("Error", "No estás autenticado. Por favor inicia sesión.");
         return;
@@ -138,16 +141,57 @@ export default function PublishPropertyScreen() {
         images: imageUrls,
       };
 
-      // TODO: Send to API endpoint
+      // Send to API endpoint
       console.log("Publishing property:", propertyData);
+
+      // Get current user from AsyncStorage
+      const userString = await AsyncStorage.getItem('currentUser');
+      const currentUser = userString ? JSON.parse(userString) : null;
+
+      if (!currentUser) {
+        Alert.alert("Error", "No se pudo obtener la información del usuario");
+        return;
+      }
+
+      // Create property via API
+      const response = await propertiesAPI.create({
+        title,
+        description,
+        price: parseFloat(price),
+        type: propertyType,
+        location,
+        bedrooms: parseInt(beds) || 0,
+        bathrooms: parseInt(baths) || 0,
+        area: parseInt(area) || 0,
+        parking: parseInt(parking) || 0,
+        amenities: amenities.join(', '),
+        images: imageUrls,
+      });
+
+      console.log('Property created successfully:', response);
+
+      // Create property data for local context
+      const propertyDataForContext = {
+        id: response.id,
+        title,
+        price: `$${parseFloat(price).toLocaleString()}`,
+        location,
+        image: imageUrls[0] || "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400",
+        beds: parseInt(beds) || 0,
+        baths: parseInt(baths) || 0,
+        area: parseInt(area) || 0
+      };
+
+      // Add to feed context for immediate UI update
+      addProperty(propertyDataForContext);
 
       Alert.alert(
         "¡Éxito!",
-        "Tu propiedad ha sido publicada con imágenes en Backblaze B2",
+        "Tu propiedad ha sido publicada exitosamente",
         [
           {
-            text: "OK",
-            onPress: () => router.back(),
+            text: "Ver Feed",
+            onPress: () => router.replace("/(tabs)"),
           },
         ]
       );

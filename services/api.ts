@@ -2,9 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
 // API Configuration
-export const API_BASE_URL = __DEV__ 
-  ? 'http://localhost:3000'  // Development
-  : 'https://api.dealclick.com'; // Production
+// Using Railway for both dev and prod since localhost doesn't work in simulators
+export const API_BASE_URL = 'https://dealclick-production.up.railway.app';
 
 // Create axios instance
 const api = axios.create({
@@ -12,12 +11,13 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  timeout: 30000, // Increased timeout to 30 seconds
 });
 
 // Request interceptor - Add auth token
 api.interceptors.request.use(
   async (config) => {
+    console.log('Making request to:', config.url);
     const token = await AsyncStorage.getItem('auth_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -25,14 +25,19 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
 
 // Response interceptor - Handle errors
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('Response received:', response.status, response.config.url);
+    return response;
+  },
   async (error) => {
+    console.error('Response error:', error.response?.status, error.response?.data, error.config?.url);
     if (error.response?.status === 401) {
       // Token expired or invalid
       await AsyncStorage.removeItem('auth_token');
@@ -65,10 +70,33 @@ export const authAPI = {
   },
 
   login: async (email: string, password: string) => {
-    const response = await api.post('/auth/login', { email, password });
-    await AsyncStorage.setItem('auth_token', response.data.access_token);
-    await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
-    return response.data;
+    let lastError;
+    const maxRetries = 3;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`Login attempt ${attempt}/${maxRetries}`);
+        const response = await api.post('/auth/login', { email, password });
+        await AsyncStorage.setItem('auth_token', response.data.access_token);
+        await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
+        return response.data;
+      } catch (error: any) {
+        lastError = error;
+        console.error(`Login attempt ${attempt} failed:`, error.response?.status, error.message);
+        
+        // If it's a 502 error and we have retries left, wait and try again
+        if (error.response?.status === 502 && attempt < maxRetries) {
+          console.log(`Waiting 2 seconds before retry...`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          continue;
+        }
+        
+        // If it's not a 502 or we're out of retries, throw the error
+        throw error;
+      }
+    }
+    
+    throw lastError;
   },
 
   logout: async () => {
@@ -231,6 +259,46 @@ export const usersAPI = {
 
   update: async (id: string, userData: any) => {
     const response = await api.patch(`/users/${id}`, userData);
+    return response.data;
+  },
+};
+
+// ============================================
+// STORAGE ENDPOINTS
+// ============================================
+
+export const storageAPI = {
+  uploadSingle: async (file: FormData) => {
+    const response = await api.post('/storage/upload', file, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  uploadMultiple: async (files: FormData) => {
+    const response = await api.post('/storage/upload-multiple', files, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+};
+
+// ============================================
+// AUTH REFRESH ENDPOINTS
+// ============================================
+
+export const authRefreshAPI = {
+  biometricLogin: async () => {
+    const response = await api.post('/auth/biometric-login');
+    return response.data;
+  },
+
+  refresh: async () => {
+    const response = await api.post('/auth/refresh');
     return response.data;
   },
 };

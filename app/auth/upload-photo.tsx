@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
@@ -68,10 +69,20 @@ export default function UploadPhotoScreen() {
     }
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!selectedImage) {
       Alert.alert('Error', 'Por favor selecciona una foto de perfil');
       return;
+    }
+
+    // Get existing signup data
+    const signupDataStr = await AsyncStorage.getItem('signup_data');
+    if (signupDataStr) {
+      const signupData = JSON.parse(signupDataStr);
+      await AsyncStorage.setItem('signup_data', JSON.stringify({
+        ...signupData,
+        avatar: selectedImage
+      }));
     }
 
     // Navigate to agent type & region screen

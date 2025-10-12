@@ -8,7 +8,7 @@ export interface AdvisorData {
   empresa: string;
   especialidad: string;
   ubicacion: string;
-  imagen: string;
+  imagen: string | any;
   propiedades?: number;
   calificacion?: number;
 }
@@ -21,7 +21,7 @@ interface AdvisorCardProps {
 export default function AdvisorCard({ advisor, onPress }: AdvisorCardProps) {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress}>
-      <Image source={{ uri: advisor.imagen }} style={styles.avatar} />
+      <Image source={typeof advisor.imagen === 'string' ? { uri: advisor.imagen } : advisor.imagen} style={styles.avatar} />
       
       <View style={styles.advisorInfo}>
         <View style={styles.nameRow}>

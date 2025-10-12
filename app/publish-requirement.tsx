@@ -1,7 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
+    ActivityIndicator,
     Alert,
     KeyboardAvoidingView,
     Platform,
@@ -13,6 +15,7 @@ import {
     View,
 } from "react-native";
 import { useFeed } from "../contexts/FeedContext";
+import { requirementsAPI } from "../services/api";
 
 const MAX_CHARACTERS = 280;
 
@@ -22,13 +25,14 @@ export default function PublishRequirementScreen() {
   const [location, setLocation] = useState("");
   const [budget, setBudget] = useState("");
   const [propertyType, setPropertyType] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const propertyTypes = ["Casa", "Departamento", "Oficina", "Local", "Terreno", "Cualquiera"];
   const characterCount = requirement.length;
   const remainingCharacters = MAX_CHARACTERS - characterCount;
   const isOverLimit = characterCount > MAX_CHARACTERS;
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
     // Validate required fields
     if (!requirement.trim()) {
       Alert.alert("Error", "Por favor escribe tu requerimiento");
@@ -40,22 +44,75 @@ export default function PublishRequirementScreen() {
       return;
     }
 
-    // Create requirement data
-    const requirementData = {
-      id: Date.now().toString(),
-      userName: "María González", // This should come from the logged-in user
-      userHandle: "mariagonzalez",
-      avatar: "https://i.pravatar.cc/100?img=1",
-      requirement: requirement.trim(),
-      timeAgo: "Ahora",
-      whatsappNumber: "521234567890", // This should come from the logged-in user
-    };
+    try {
+      setLoading(true);
+      
+      // Get current user from AsyncStorage
+      const userString = await AsyncStorage.getItem('currentUser');
+      const currentUser = userString ? JSON.parse(userString) : null;
+      
+      if (!currentUser) {
+        Alert.alert("Error", "No se pudo obtener la información del usuario");
+        return;
+      }
 
-    // Add to feed
-    addRequirement(requirementData);
-    
-    // Navigate back
-    router.back();
+      console.log('Publishing requirement:', {
+        requirement: requirement.trim(),
+        propertyType: propertyType || undefined,
+        location: location || undefined,
+        budget: budget || undefined,
+      });
+
+      // Create requirement via API
+      const response = await requirementsAPI.create({
+        requirement: requirement.trim(),
+        propertyType: propertyType || undefined,
+        location: location || undefined,
+        budget: budget || undefined,
+      });
+
+      console.log('Requirement created successfully:', response);
+
+      // Create requirement data for local context
+      const requirementData = {
+        id: response.id,
+        userName: currentUser.name || "Usuario",
+        userHandle: currentUser.userHandle || "usuario",
+        avatar: currentUser.avatar || require('../assets/images/frontlogo.png'),
+        requirement: requirement.trim(),
+        timeAgo: "Ahora",
+        whatsappNumber: currentUser.whatsappNumber || "",
+      };
+
+      // Add to feed context for immediate UI update
+      addRequirement(requirementData);
+
+      // Show success message
+      Alert.alert(
+        "¡Publicado!",
+        "Tu requerimiento ha sido publicado exitosamente",
+        [
+          {
+            text: "Ver Feed",
+            onPress: () => router.replace("/(tabs)"),
+          },
+        ]
+      );
+    } catch (error: any) {
+      console.error('Error publishing requirement:', error);
+      
+      let errorMessage = 'No se pudo publicar el requerimiento. Por favor intenta de nuevo.';
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message === 'Network Error') {
+        errorMessage = 'Sin conexión a internet. Verifica tu conexión.';
+      }
+      
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -73,19 +130,26 @@ export default function PublishRequirementScreen() {
         <TouchableOpacity
           style={[
             styles.publishButton,
-            (!requirement.trim() || isOverLimit) && styles.publishButtonDisabled,
+            (!requirement.trim() || isOverLimit || loading) && styles.publishButtonDisabled,
           ]}
           onPress={handlePublish}
-          disabled={!requirement.trim() || isOverLimit}
+          disabled={!requirement.trim() || isOverLimit || loading}
         >
-          <Text
-            style={[
-              styles.publishButtonText,
-              (!requirement.trim() || isOverLimit) && styles.publishButtonTextDisabled,
-            ]}
-          >
-            Publicar
-          </Text>
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#fff" />
+              <Text style={styles.publishButtonText}>Publicando...</Text>
+            </View>
+          ) : (
+            <Text
+              style={[
+                styles.publishButtonText,
+                (!requirement.trim() || isOverLimit) && styles.publishButtonTextDisabled,
+              ]}
+            >
+              Publicar
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -361,6 +425,11 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 40,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
 });
 

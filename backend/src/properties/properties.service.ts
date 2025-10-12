@@ -27,10 +27,16 @@ export class PropertiesService {
     const queryBuilder = this.propertyRepository
       .createQueryBuilder('property')
       .leftJoinAndSelect('property.user', 'user')
-      .where('property.hidden = :hidden', { hidden: false })  // Filter out hidden items
       .orderBy('property.createdAt', 'DESC')
       .skip(skip)
       .take(limit);
+    
+    // Filter hidden items only if column exists
+    try {
+      queryBuilder.andWhere('(property.hidden = :hidden OR property.hidden IS NULL)', { hidden: false });
+    } catch (err) {
+      // Column doesn't exist yet, skip filter
+    }
 
     if (type && type !== 'Todos') {
       queryBuilder.andWhere('property.propertyType = :type', { type });

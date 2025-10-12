@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { authAPI } from '../../services/api';
 
 const PROPERTY_TYPES = [
   { id: 'casas', name: 'Casas', icon: 'home', description: 'Propiedades residenciales' },
@@ -25,6 +27,7 @@ export default function AgentTypeScreen() {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedRegion, setSelectedRegion] = useState('');
   const [showRegionDropdown, setShowRegionDropdown] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const togglePropertyType = (typeId: string) => {
     if (selectedTypes.includes(typeId)) {
@@ -34,7 +37,7 @@ export default function AgentTypeScreen() {
     }
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (selectedTypes.length === 0) {
       Alert.alert('Error', 'Por favor selecciona al menos un tipo de propiedad');
       return;
@@ -45,8 +48,70 @@ export default function AgentTypeScreen() {
       return;
     }
 
-    // Navigate to main app
-    router.replace('/(tabs)');
+    try {
+      setLoading(true);
+
+      // Get all signup data
+      const signupDataStr = await AsyncStorage.getItem('signup_data');
+      if (!signupDataStr) {
+        Alert.alert('Error', 'Datos de registro no encontrados');
+        router.replace('/auth/create-account');
+        return;
+      }
+
+      const signupData = JSON.parse(signupDataStr);
+
+      // Create account via API
+      console.log('Creating account with data:', {
+        email: signupData.email,
+        name: signupData.name,
+        city: signupData.city,
+        company: signupData.company,
+        propertyTypes: selectedTypes,
+        region: selectedRegion
+      });
+
+      const response = await authAPI.register({
+        email: signupData.email,
+        password: signupData.password,
+        name: signupData.name,
+        userHandle: signupData.email.split('@')[0], // Generate userHandle from email
+        phone: signupData.phone || undefined,
+        whatsappNumber: signupData.phone || undefined,
+        company: signupData.company || 'Independiente',
+        ubicacion: selectedRegion,
+        specialties: selectedTypes.join(', '),
+      });
+
+      console.log('Account created successfully:', response);
+
+      // Save auth token and user data
+      await AsyncStorage.setItem('auth_token', response.access_token);
+      await AsyncStorage.setItem('user', JSON.stringify(response.user));
+      await AsyncStorage.setItem('currentUser', JSON.stringify(response.user));
+
+      // Clear signup data
+      await AsyncStorage.removeItem('signup_data');
+
+      Alert.alert(
+        '¡Bienvenido!',
+        'Tu cuenta ha sido creada exitosamente',
+        [
+          {
+            text: 'Comenzar',
+            onPress: () => router.replace('/(tabs)')
+          }
+        ]
+      );
+    } catch (error: any) {
+      console.error('Error creating account:', error);
+      Alert.alert(
+        'Error',
+        error.response?.data?.message || 'No se pudo crear la cuenta. Por favor intenta de nuevo.'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -145,12 +210,16 @@ export default function AgentTypeScreen() {
           <TouchableOpacity 
             style={[
               styles.continueButton, 
-              selectedTypes.length > 0 && selectedRegion && styles.continueButtonActive
+              selectedTypes.length > 0 && selectedRegion && !loading && styles.continueButtonActive
             ]} 
             onPress={handleContinue}
-            disabled={selectedTypes.length === 0 || !selectedRegion}
+            disabled={selectedTypes.length === 0 || !selectedRegion || loading}
           >
-            <Text style={styles.continueButtonText}>Finalizar</Text>
+            {loading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.continueButtonText}>Finalizar</Text>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>

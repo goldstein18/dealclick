@@ -1,73 +1,23 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FlatList, Keyboard, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import type { AdvisorData } from "../../components";
 import { AdvisorCard } from "../../components";
+import { advisorsAPI } from "../../services/api";
 
-const asesoresData: AdvisorData[] = [
-  {
-    id: '1',
-    nombre: 'Ana López',
-    empresa: 'RE/MAX',
-    imagen: 'https://randomuser.me/api/portraits/women/44.jpg',
-    ubicacion: 'CDMX',
-    especialidad: 'Residencial',
-    calificacion: 4.8,
-    propiedades: 12,
-  },
-  {
-    id: '2',
-    nombre: 'Carlos Pérez',
-    empresa: 'Century 21',
-    imagen: 'https://randomuser.me/api/portraits/men/45.jpg',
-    ubicacion: 'Edo. Mex',
-    especialidad: 'Comercial',
-    calificacion: 4.6,
-    propiedades: 8,
-  },
-  {
-    id: '3',
-    nombre: 'María García',
-    empresa: 'Keller Williams',
-    imagen: 'https://randomuser.me/api/portraits/women/46.jpg',
-    ubicacion: 'CDMX',
-    especialidad: 'Residencial',
-    calificacion: 4.9,
-    propiedades: 15,
-  },
-  {
-    id: '4',
-    nombre: 'Luis Torres',
-    empresa: 'Engel & Völkers',
-    imagen: 'https://randomuser.me/api/portraits/men/47.jpg',
-    ubicacion: 'Jalisco',
-    especialidad: 'Industrial',
-    calificacion: 4.7,
-    propiedades: 6,
-  },
-  {
-    id: '5',
-    nombre: 'Patricia Silva',
-    empresa: 'Coldwell Banker',
-    imagen: 'https://randomuser.me/api/portraits/women/48.jpg',
-    ubicacion: 'CDMX',
-    especialidad: 'Residencial',
-    calificacion: 4.5,
-    propiedades: 10,
-  },
-  {
-    id: '6',
-    nombre: 'Roberto Mendoza',
-    empresa: 'RE/MAX',
-    imagen: 'https://randomuser.me/api/portraits/men/49.jpg',
-    fechaRegistro: '2022-09-20',
-    ubicacion: 'Edo. Mex',
-    especialidad: 'Comercial',
-    calificacion: 4.4,
-    propiedades: 7,
-  },
-];
+// Helper function to transform API data to component format
+const transformAdvisorData = (apiAdvisor: any): AdvisorData => ({
+  id: apiAdvisor.id,
+  nombre: apiAdvisor.nombre || 'Asesor',
+  empresa: apiAdvisor.empresa || 'Independiente',
+  imagen: apiAdvisor.imagen || require('../../assets/images/frontlogo.png'),
+  ubicacion: apiAdvisor.ubicacion || 'Ubicación no especificada',
+  especialidad: apiAdvisor.especialidad || 'General',
+  calificacion: apiAdvisor.calificacion || 4.0,
+  propiedades: apiAdvisor.propiedades || 0,
+  fechaRegistro: apiAdvisor.createdAt ? new Date(apiAdvisor.createdAt).toLocaleDateString() : undefined
+});
 
 const estados = [
   'Todos', 'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 
@@ -104,13 +54,45 @@ export default function AdvisorsScreen() {
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [searchText, setSearchText] = useState('');
+  
+  // API state
+  const [advisors, setAdvisors] = useState<AdvisorData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const asesoresFiltrados = asesoresData.filter(a =>
-    (filtroNombre === '' || a.nombre.toLowerCase().includes(filtroNombre.toLowerCase())) &&
-    (filtroEstado === 'Todos' || a.ubicacion === filtroEstado) &&
-    (filtroEspecialidad === 'Todas' || a.especialidad === filtroEspecialidad) &&
-    (filtroEmpresa === 'Todas' || a.empresa === filtroEmpresa)
-  );
+  const loadAdvisors = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('Loading advisors from API...');
+      
+      const response = await advisorsAPI.getAll({
+        search: filtroNombre || undefined,
+        estado: filtroEstado !== 'Todos' ? filtroEstado : undefined,
+        especialidad: filtroEspecialidad !== 'Todas' ? filtroEspecialidad : undefined,
+        empresa: filtroEmpresa !== 'Todas' ? filtroEmpresa : undefined,
+      });
+      
+      console.log('Advisors response:', response);
+      
+      const transformedAdvisors = response.data?.map(transformAdvisorData) || [];
+      setAdvisors(transformedAdvisors);
+      
+      console.log('Advisors loaded successfully');
+    } catch (err: any) {
+      console.error('Error loading advisors:', err);
+      setError(err.response?.data?.message || 'Error al cargar los asesores');
+      setAdvisors([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load advisors on mount and when filters change
+  useEffect(() => {
+    loadAdvisors();
+  }, [filtroNombre, filtroEstado, filtroEspecialidad, filtroEmpresa]);
 
   const handleDropdownToggle = (dropdownName: string) => {
     setOpenDropdown(openDropdown === dropdownName ? null : dropdownName);
@@ -228,17 +210,35 @@ export default function AdvisorsScreen() {
 
       {/* Advisors List */}
       <FlatList
-        data={asesoresFiltrados}
+        data={advisors}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContainer}
         renderItem={({ item }) => <AdvisorItem item={item} />}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
+        refreshing={loading}
+        onRefresh={loadAdvisors}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="people-outline" size={48} color="#ccc" />
-            <Text style={styles.emptyText}>No se encontraron asesores</Text>
-            <Text style={styles.emptySubtext}>Intenta ajustar los filtros</Text>
-          </View>
+          loading ? (
+            <View style={styles.loadingContainer}>
+              <Ionicons name="refresh" size={32} color="#666" />
+              <Text style={styles.loadingText}>Cargando asesores...</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.errorContainer}>
+              <Ionicons name="alert-circle" size={32} color="#ff6b6b" />
+              <Text style={styles.errorText}>Error al cargar asesores</Text>
+              <Text style={styles.errorSubtext}>{error}</Text>
+              <TouchableOpacity style={styles.retryButton} onPress={loadAdvisors}>
+                <Text style={styles.retryButtonText}>Reintentar</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="people-outline" size={48} color="#ccc" />
+              <Text style={styles.emptyText}>No se encontraron asesores</Text>
+              <Text style={styles.emptySubtext}>Intenta ajustar los filtros</Text>
+            </View>
+          )
         }
       />
 
@@ -705,6 +705,48 @@ const styles = StyleSheet.create({
   applyButtonText: {
     fontSize: 16,
     color: '#fff',
+    fontWeight: '600',
+  },
+  // Loading and Error States
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 16,
+  },
+  errorContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 20,
+  },
+  errorText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#ff6b6b',
+    marginTop: 16,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  errorSubtext: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  retryButton: {
+    backgroundColor: '#000',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
     fontWeight: '600',
   },
 }); 

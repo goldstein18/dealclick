@@ -6,7 +6,7 @@ export interface RequirementData {
   id: string;
   userName: string;
   userHandle: string;
-  avatar: string;
+  avatar: string | any;
   timeAgo: string;
   requirement: string;
   whatsappNumber?: string;
@@ -41,7 +41,7 @@ export default function RequirementCard({
           onPress={onUserPress}
         >
           <Image 
-            source={{ uri: requirement.avatar }} 
+            source={typeof requirement.avatar === 'string' ? { uri: requirement.avatar } : requirement.avatar} 
             style={styles.avatar} 
           />
           <View style={styles.userText}>

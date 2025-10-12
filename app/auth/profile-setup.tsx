@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
@@ -8,11 +9,12 @@ export default function ProfileSetupScreen() {
   const [fullName, setFullName] = useState('');
   const [city, setCity] = useState('');
   const [agency, setAgency] = useState('');
+  const [phone, setPhone] = useState('');
   const [yearsExperience, setYearsExperience] = useState('');
   const [birthDate, setBirthDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!fullName.trim()) {
       Alert.alert('Error', 'Por favor ingresa tu nombre completo');
       return;
@@ -27,6 +29,27 @@ export default function ProfileSetupScreen() {
       Alert.alert('Error', 'Por favor ingresa tus años de experiencia');
       return;
     }
+
+    // Get existing signup data
+    const signupDataStr = await AsyncStorage.getItem('signup_data');
+    if (!signupDataStr) {
+      Alert.alert('Error', 'Datos de registro no encontrados');
+      router.replace('/auth/create-account');
+      return;
+    }
+
+    const signupData = JSON.parse(signupDataStr);
+
+    // Add profile data
+    await AsyncStorage.setItem('signup_data', JSON.stringify({
+      ...signupData,
+      name: fullName.trim(),
+      city: city.trim(),
+      company: agency.trim() || 'Independiente',
+      phone: phone.trim() || undefined,
+      experience: yearsExperience.trim(),
+      birthDate: birthDate.toISOString()
+    }));
 
     // Navigate to upload photo screen
     router.push('/auth/upload-photo');
@@ -100,6 +123,18 @@ export default function ProfileSetupScreen() {
               value={agency}
               onChangeText={setAgency}
               autoCapitalize="words"
+            />
+          </View>
+
+          {/* Phone Input */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Teléfono (opcional)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="+52 123 456 7890"
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
             />
           </View>
 

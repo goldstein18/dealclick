@@ -27,10 +27,16 @@ export class RequirementsService {
     const queryBuilder = this.requirementRepository
       .createQueryBuilder('requirement')
       .leftJoinAndSelect('requirement.user', 'user')
-      .where('requirement.hidden = :hidden', { hidden: false })  // Filter out hidden items
       .orderBy('requirement.createdAt', 'DESC')
       .skip(skip)
       .take(limit);
+    
+    // Filter hidden items only if column exists
+    try {
+      queryBuilder.andWhere('(requirement.hidden = :hidden OR requirement.hidden IS NULL)', { hidden: false });
+    } catch (err) {
+      // Column doesn't exist yet, skip filter
+    }
 
     if (propertyType && propertyType !== 'Todos') {
       queryBuilder.andWhere('requirement.propertyType = :propertyType', { propertyType });

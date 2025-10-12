@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -19,7 +20,7 @@ export default function CreateAccountScreen() {
     return password.length >= 8;
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!email.trim()) {
       Alert.alert('Error', 'Por favor ingresa tu email');
       return;
@@ -45,8 +46,14 @@ export default function CreateAccountScreen() {
       return;
     }
 
-    // Navigate to verify identity screen
-    router.push('/auth/verify-identity');
+    // Store signup data temporarily
+    await AsyncStorage.setItem('signup_data', JSON.stringify({
+      email: email.toLowerCase().trim(),
+      password
+    }));
+
+    // Navigate to verify identity screen (skip for now, go to profile setup)
+    router.push('/auth/profile-setup');
   };
 
   return (
@@ -80,6 +87,8 @@ export default function CreateAccountScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
+              textContentType="none"
+              autoComplete="off"
             />
           </View>
 
@@ -94,6 +103,12 @@ export default function CreateAccountScreen() {
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
+                textContentType="oneTimeCode"
+                autoComplete="off"
+                passwordRules=""
+                autoCorrect={false}
+                spellCheck={false}
+                importantForAutofill="no"
               />
               <TouchableOpacity 
                 style={styles.eyeButton}
@@ -119,6 +134,12 @@ export default function CreateAccountScreen() {
                 onChangeText={setConfirmPassword}
                 secureTextEntry={!showConfirmPassword}
                 autoCapitalize="none"
+                textContentType="oneTimeCode"
+                autoComplete="off"
+                passwordRules=""
+                autoCorrect={false}
+                spellCheck={false}
+                importantForAutofill="no"
               />
               <TouchableOpacity 
                 style={styles.eyeButton}
