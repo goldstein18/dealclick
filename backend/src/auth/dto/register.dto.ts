@@ -33,5 +33,16 @@ export class RegisterDto {
   @IsString()
   @IsOptional()
   role?: string;
+
+  @IsString()
+  @IsOptional()
+  bio?: string;
+
+  @IsString()
+  @IsOptional()
+  ubicacion?: string;
+
+  @IsOptional()
+  specialties?: string | string[];
 }
 

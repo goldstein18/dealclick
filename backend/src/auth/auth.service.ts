@@ -31,10 +31,17 @@ export class AuthService {
     // Hash password
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
+    // Process specialties - convert to array if string
+    let specialties = registerDto.specialties;
+    if (typeof specialties === 'string') {
+      specialties = specialties.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    }
+
     // Create user
     const user = this.userRepository.create({
       ...registerDto,
       password: hashedPassword,
+      specialties: specialties || undefined,
     });
 
     await this.userRepository.save(user);
