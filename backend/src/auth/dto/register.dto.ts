@@ -42,7 +42,8 @@ export class RegisterDto {
   @IsOptional()
   ubicacion?: string;
 
+  @IsString()
   @IsOptional()
-  specialties?: string | string[];
+  specialties?: string;
 }
 
