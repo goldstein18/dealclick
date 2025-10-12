@@ -27,6 +27,7 @@ export class PropertiesService {
     const queryBuilder = this.propertyRepository
       .createQueryBuilder('property')
       .leftJoinAndSelect('property.user', 'user')
+      .where('property.hidden = :hidden', { hidden: false })  // Filter out hidden items
       .orderBy('property.createdAt', 'DESC')
       .skip(skip)
       .take(limit);

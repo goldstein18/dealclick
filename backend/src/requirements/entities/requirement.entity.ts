@@ -32,6 +32,9 @@ export class Requirement {
   @Column({ default: 0 })
   replies: number;
 
+  @Column({ default: false })
+  hidden: boolean;
+
   @ManyToOne(() => User, user => user.requirements)
   @JoinColumn({ name: 'user_id' })
   user: User;

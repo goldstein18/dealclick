@@ -27,6 +27,7 @@ export class RequirementsService {
     const queryBuilder = this.requirementRepository
       .createQueryBuilder('requirement')
       .leftJoinAndSelect('requirement.user', 'user')
+      .where('requirement.hidden = :hidden', { hidden: false })  // Filter out hidden items
       .orderBy('requirement.createdAt', 'DESC')
       .skip(skip)
       .take(limit);

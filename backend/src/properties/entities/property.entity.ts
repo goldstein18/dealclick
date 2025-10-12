@@ -62,6 +62,9 @@ export class Property {
   @Column({ default: 0 })
   likes: number;
 
+  @Column({ default: false })
+  hidden: boolean;
+
   @ManyToOne(() => User, user => user.properties)
   @JoinColumn({ name: 'user_id' })
   user: User;
