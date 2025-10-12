@@ -1,325 +1,710 @@
-import React, { useState } from "react";
-import { View, Text, FlatList, Image, StyleSheet, TextInput, TouchableOpacity, Animated, Pressable } from "react-native";
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import React, { useState } from "react";
+import { FlatList, Keyboard, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import type { AdvisorData } from "../../components";
+import { AdvisorCard } from "../../components";
 
-const asesoresData = [
+const asesoresData: AdvisorData[] = [
   {
     id: '1',
     nombre: 'Ana López',
     empresa: 'RE/MAX',
-    foto: 'https://randomuser.me/api/portraits/women/44.jpg',
-    fechaRegistro: '2023-01-15',
-    estado: 'CDMX',
+    imagen: 'https://randomuser.me/api/portraits/women/44.jpg',
+    ubicacion: 'CDMX',
     especialidad: 'Residencial',
+    calificacion: 4.8,
+    propiedades: 12,
   },
   {
     id: '2',
     nombre: 'Carlos Pérez',
     empresa: 'Century 21',
-    foto: 'https://randomuser.me/api/portraits/men/45.jpg',
-    fechaRegistro: '2022-11-10',
-    estado: 'Edo. Mex',
+    imagen: 'https://randomuser.me/api/portraits/men/45.jpg',
+    ubicacion: 'Edo. Mex',
     especialidad: 'Comercial',
+    calificacion: 4.6,
+    propiedades: 8,
   },
   {
     id: '3',
     nombre: 'María García',
     empresa: 'Keller Williams',
-    foto: 'https://randomuser.me/api/portraits/women/46.jpg',
-    fechaRegistro: '2023-03-05',
-    estado: 'CDMX',
+    imagen: 'https://randomuser.me/api/portraits/women/46.jpg',
+    ubicacion: 'CDMX',
     especialidad: 'Residencial',
+    calificacion: 4.9,
+    propiedades: 15,
   },
   {
     id: '4',
     nombre: 'Luis Torres',
     empresa: 'Engel & Völkers',
-    foto: 'https://randomuser.me/api/portraits/men/47.jpg',
-    fechaRegistro: '2022-12-20',
-    estado: 'Jalisco',
+    imagen: 'https://randomuser.me/api/portraits/men/47.jpg',
+    ubicacion: 'Jalisco',
     especialidad: 'Industrial',
+    calificacion: 4.7,
+    propiedades: 6,
+  },
+  {
+    id: '5',
+    nombre: 'Patricia Silva',
+    empresa: 'Coldwell Banker',
+    imagen: 'https://randomuser.me/api/portraits/women/48.jpg',
+    ubicacion: 'CDMX',
+    especialidad: 'Residencial',
+    calificacion: 4.5,
+    propiedades: 10,
+  },
+  {
+    id: '6',
+    nombre: 'Roberto Mendoza',
+    empresa: 'RE/MAX',
+    imagen: 'https://randomuser.me/api/portraits/men/49.jpg',
+    fechaRegistro: '2022-09-20',
+    ubicacion: 'Edo. Mex',
+    especialidad: 'Comercial',
+    calificacion: 4.4,
+    propiedades: 7,
   },
 ];
 
-const estados = ['Todos', 'CDMX', 'Edo. Mex', 'Jalisco'];
-const especialidades = ['Todas', 'Residencial', 'Comercial', 'Industrial'];
-const empresas = ['Todas', ...Array.from(new Set(asesoresData.map(a => a.empresa)))];
+const estados = [
+  'Todos', 'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 
+  'Chiapas', 'Chihuahua', 'CDMX', 'Coahuila', 'Colima', 'Durango', 'Edo. Mex', 
+  'Guanajuato', 'Guerrero', 'Hidalgo', 'Jalisco', 'Michoacán', 'Morelos', 
+  'Nayarit', 'Nuevo León', 'Oaxaca', 'Puebla', 'Querétaro', 'Quintana Roo', 
+  'San Luis Potosí', 'Sinaloa', 'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 
+  'Veracruz', 'Yucatán', 'Zacatecas'
+];
 
-function FresaCard({ item }: { item: typeof asesoresData[0] }) {
-  const scale = useState(new Animated.Value(1))[0];
+const especialidades = ['Todas', 'Residencial', 'Comercial', 'Industrial', 'Terrenos', 'Oficinas'];
+const empresas = [
+  'Todas', 'RE/MAX', 'Century 21', 'Keller Williams', 'Engel & Völkers', 
+  'Coldwell Banker', 'Sotheby\'s', 'Berkshire Hathaway', 'Compass', 'Redfin',
+  'Zillow', 'Trulia', 'Realty ONE Group', 'Better Homes and Gardens',
+  'ERA Real Estate', 'Long & Foster', 'Howard Hanna', 'HomeServices of America'
+];
+
+function AdvisorItem({ item }: { item: AdvisorData }) {
   return (
-    <Pressable
-      onPressIn={() => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true }).start()}
-      onPressOut={() => Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start()}
-      style={{ marginBottom: 36 }}
-    >
-      <Animated.View style={[styles.cardShadow, { transform: [{ scale }] }]}
-      >
-        <View style={styles.cardContent}>
-          <View style={styles.avatarContainer}>
-            <View style={styles.avatarGlowWrap}>
-              <Image source={{ uri: item.foto }} style={styles.avatar} />
-            </View>
-          </View>
-          <View style={styles.infoContainer}>
-            <Text style={styles.nombre}>{item.nombre}</Text>
-            <Text style={styles.empresa}>{item.empresa}</Text>
-            <View style={styles.separator} />
-            <View style={styles.chipRow}>
-              <View style={styles.chipEstado}>
-                <Text style={styles.chipText}>{item.estado}</Text>
-              </View>
-              <View style={styles.chipEspecialidad}>
-                <Text style={styles.chipText}>{item.especialidad}</Text>
-              </View>
-            </View>
-            <View style={styles.metaRow}>
-              <Ionicons name="calendar-outline" size={15} color="#b0b0b0" style={{ marginRight: 4 }} />
-              <Text style={styles.meta}>{item.fechaRegistro}</Text>
-            </View>
-          </View>
-        </View>
-      </Animated.View>
-    </Pressable>
+    <AdvisorCard 
+      advisor={item}
+      onPress={() => router.push('/profile')}
+    />
   );
 }
+
 
 export default function AdvisorsScreen() {
   const [filtroNombre, setFiltroNombre] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('Todos');
   const [filtroEspecialidad, setFiltroEspecialidad] = useState('Todas');
   const [filtroEmpresa, setFiltroEmpresa] = useState('Todas');
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [searchText, setSearchText] = useState('');
 
   const asesoresFiltrados = asesoresData.filter(a =>
     (filtroNombre === '' || a.nombre.toLowerCase().includes(filtroNombre.toLowerCase())) &&
-    (filtroEstado === 'Todos' || a.estado === filtroEstado) &&
+    (filtroEstado === 'Todos' || a.ubicacion === filtroEstado) &&
     (filtroEspecialidad === 'Todas' || a.especialidad === filtroEspecialidad) &&
     (filtroEmpresa === 'Todas' || a.empresa === filtroEmpresa)
   );
 
-  return (
-    <View style={{ flex: 1 }}>
-      {/* Filtros arriba */}
-      <View style={styles.filtrosContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Buscar por nombre"
-          value={filtroNombre}
-          onChangeText={setFiltroNombre}
-        />
-        <FlatList
-          data={estados}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={item => item}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={item === filtroEstado ? styles.filtroActivo : styles.filtro}
-              onPress={() => setFiltroEstado(item)}
-            >
-              <Text style={item === filtroEstado ? styles.filtroActivoText : styles.filtroText}>{item}</Text>
-            </TouchableOpacity>
-          )}
-        />
-        <FlatList
-          data={especialidades}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={item => item}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={item === filtroEspecialidad ? styles.filtroActivo : styles.filtro}
-              onPress={() => setFiltroEspecialidad(item)}
-            >
-              <Text style={item === filtroEspecialidad ? styles.filtroActivoText : styles.filtroText}>{item}</Text>
-            </TouchableOpacity>
-          )}
-        />
-        <FlatList
-          data={empresas}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={item => item}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={item === filtroEmpresa ? styles.filtroActivo : styles.filtro}
-              onPress={() => setFiltroEmpresa(item)}
-            >
-              <Text style={item === filtroEmpresa ? styles.filtroActivoText : styles.filtroText}>{item}</Text>
-            </TouchableOpacity>
-          )}
-        />
+  const handleDropdownToggle = (dropdownName: string) => {
+    setOpenDropdown(openDropdown === dropdownName ? null : dropdownName);
+    setSearchText('');
+  };
+
+  const SearchableDropdown = ({ 
+    title, 
+    value, 
+    options, 
+    onSelect, 
+    isOpen, 
+    onToggle 
+  }: {
+    title: string;
+    value: string;
+    options: string[];
+    onSelect: (value: string) => void;
+    isOpen: boolean;
+    onToggle: () => void;
+  }) => {
+    const filteredOptions = options.filter(option =>
+      option.toLowerCase().includes(searchText.toLowerCase())
+    );
+
+    return (
+      <View style={[styles.dropdownContainer, isOpen && styles.dropdownContainerActive]}>
+        <TouchableOpacity 
+          style={[
+            styles.dropdownButton,
+            isOpen && styles.dropdownButtonActive
+          ]} 
+          onPress={onToggle}
+        >
+          <View style={styles.dropdownContent}>
+            <Text style={styles.dropdownTitle}>{title}</Text>
+            <Text style={[styles.dropdownValue, isOpen && styles.dropdownValueActive]}>
+              {value}
+            </Text>
+          </View>
+          <Ionicons 
+            name={isOpen ? "chevron-up" : "chevron-down"} 
+            size={16} 
+            color={isOpen ? "#000" : "#666"} 
+          />
+        </TouchableOpacity>
+        
+        {isOpen && (
+          <View style={styles.dropdownPanel}>
+            <View style={styles.dropdownSearchContainer}>
+              <Ionicons name="search" size={16} color="#666" />
+              <TextInput
+                style={styles.dropdownSearchInput}
+                placeholder={`Buscar ${title.toLowerCase()}...`}
+                value={searchText}
+                onChangeText={setSearchText}
+                autoFocus
+              />
+            </View>
+            
+            <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={false}>
+              {filteredOptions.map((option) => (
+                <TouchableOpacity
+                  key={option}
+                  style={[
+                    styles.dropdownOption,
+                    value === option && styles.dropdownOptionSelected
+                  ]}
+                  onPress={() => {
+                    onSelect(option);
+                    onToggle();
+                    setSearchText('');
+                  }}
+                >
+                  <Text style={[
+                    styles.dropdownOptionText,
+                    value === option && styles.dropdownOptionTextSelected
+                  ]}>
+                    {option}
+                  </Text>
+                  {value === option && (
+                    <Ionicons name="checkmark" size={16} color="#fff" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
       </View>
+    );
+  };
+
+
+  return (
+    <View style={styles.container}>
+      {/* Header with Search */}
+      <View style={styles.header}>
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Buscar asesores..."
+            value={filtroNombre}
+            onChangeText={setFiltroNombre}
+          />
+          <TouchableOpacity 
+            style={styles.filterButton}
+            onPress={() => setShowFilterModal(true)}
+          >
+            <Ionicons name="filter" size={20} color="#000" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+
+      {/* Advisors List */}
       <FlatList
         data={asesoresFiltrados}
         keyExtractor={item => item.id}
-        contentContainerStyle={styles.container}
-        renderItem={({ item }) => <FresaCard item={item} />}
-        ListEmptyComponent={<Text style={{ marginTop: 32, textAlign: 'center' }}>No se encontraron asesores.</Text>}
+        contentContainerStyle={styles.listContainer}
+        renderItem={({ item }) => <AdvisorItem item={item} />}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Ionicons name="people-outline" size={48} color="#ccc" />
+            <Text style={styles.emptyText}>No se encontraron asesores</Text>
+            <Text style={styles.emptySubtext}>Intenta ajustar los filtros</Text>
+          </View>
+        }
       />
+
+      {/* Filter Modal */}
+      <Modal
+        visible={showFilterModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowFilterModal(false)}
+      >
+        <Pressable 
+          style={styles.modalOverlay}
+          onPress={() => {
+            Keyboard.dismiss();
+            setShowFilterModal(false);
+          }}
+        >
+          <Pressable 
+            style={styles.modalContent}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Filtrar Asesores</Text>
+              <TouchableOpacity 
+                style={styles.closeButton}
+                onPress={() => setShowFilterModal(false)}
+              >
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView 
+              style={styles.modalBody}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingBottom: 20 }}
+            >
+              {/* Estado Filter */}
+              <View style={styles.filterSection}>
+                <Text style={styles.filterLabel}>Estado</Text>
+                <SearchableDropdown
+                  title="Estado"
+                  value={filtroEstado}
+                  options={estados}
+                  onSelect={setFiltroEstado}
+                  isOpen={openDropdown === 'estado'}
+                  onToggle={() => handleDropdownToggle('estado')}
+                />
+              </View>
+
+              {/* Especialidad Filter */}
+              <View style={styles.filterSection}>
+                <Text style={styles.filterLabel}>Especialidad</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipContainer}>
+                  {especialidades.map((especialidad) => (
+                    <TouchableOpacity
+                      key={especialidad}
+                      style={[
+                        styles.filterChip,
+                        filtroEspecialidad === especialidad && styles.filterChipActive
+                      ]}
+                      onPress={() => setFiltroEspecialidad(especialidad)}
+                    >
+                      <Text style={[
+                        styles.filterChipText,
+                        filtroEspecialidad === especialidad && styles.filterChipTextActive
+                      ]}>
+                        {especialidad}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+
+              {/* Empresa Filter */}
+              <View style={styles.filterSection}>
+                <Text style={styles.filterLabel}>Empresa</Text>
+                <SearchableDropdown
+                  title="Empresa"
+                  value={filtroEmpresa}
+                  options={empresas}
+                  onSelect={setFiltroEmpresa}
+                  isOpen={openDropdown === 'empresa'}
+                  onToggle={() => handleDropdownToggle('empresa')}
+                />
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity 
+                style={styles.clearButton}
+                onPress={() => {
+                  setFiltroEstado('Todos');
+                  setFiltroEspecialidad('Todas');
+                  setFiltroEmpresa('Todas');
+                }}
+              >
+                <Text style={styles.clearButtonText}>Limpiar Filtros</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.applyButton}
+                onPress={() => setShowFilterModal(false)}
+              >
+                <Text style={styles.applyButtonText}>Aplicar</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
-    backgroundColor: '#f6f8fa',
+    flex: 1,
+    backgroundColor: '#f8f9fa',
   },
-  filtrosContainer: {
-    padding: 16,
+  header: {
     backgroundColor: '#fff',
+    paddingTop: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
     borderBottomWidth: 1,
-    borderColor: '#f0f0f0',
+    borderBottomColor: '#e1e5e9',
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#eee',
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 8,
-    backgroundColor: '#fafafa',
-    fontSize: 15,
-  },
-  filtro: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: '#eee',
-    marginRight: 8,
-    marginBottom: 8,
-  },
-  filtroActivo: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: '#C35139',
-    marginRight: 8,
-    marginBottom: 8,
-  },
-  filtroText: {
-    color: '#222',
-    fontWeight: '500',
-    fontFamily: 'System',
-  },
-  filtroActivoText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontFamily: 'System',
-  },
-  cardShadow: {
-    borderRadius: 32,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOpacity: 0.07,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 6,
-    borderWidth: 1,
-    borderColor: '#f2f2f2',
-  },
-  cardContent: {
+  searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'transparent',
-    borderRadius: 32,
-    padding: 28,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
   },
-  avatarContainer: {
-    borderRadius: 50,
-    backgroundColor: '#fff',
-    padding: 0,
-    marginRight: 28,
-    shadowColor: '#fff',
-    shadowOpacity: 0.7,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 2,
+  searchIcon: {
+    marginRight: 12,
   },
-  avatarGlowWrap: {
-    borderRadius: 50,
-    padding: 3,
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+  },
+  filterButton: {
+    padding: 8,
+    marginLeft: 8,
+  },
+  listContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
+  advisorItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#fff',
-    borderWidth: 2,
-    borderColor: '#eaeaea',
-    shadowColor: '#fff',
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 0 },
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
     elevation: 2,
   },
   avatar: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    borderWidth: 1.5,
-    borderColor: '#eaeaea',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginRight: 16,
+    borderWidth: 2,
+    borderColor: '#f0f0f0',
   },
-  infoContainer: {
+  advisorInfo: {
     flex: 1,
   },
+  nameRow: {
+    marginBottom: 4,
+  },
   nombre: {
-    fontWeight: '700',
-    fontSize: 22,
-    marginBottom: 2,
-    color: '#222',
-    letterSpacing: 0.1,
-    fontFamily: 'System',
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
   },
   empresa: {
-    color: '#C35139',
-    fontWeight: '700',
-    marginBottom: 10,
-    fontSize: 18,
-    letterSpacing: 0.2,
-    fontFamily: 'System',
+    fontSize: 14,
+    color: '#000',
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  detailsRow: {
+    flexDirection: 'row',
+    marginBottom: 8,
+    gap: 12,
+  },
+  locationChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  locationText: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 4,
+  },
+  specialtyChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  specialtyText: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 4,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statText: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 4,
+  },
+  dateText: {
+    fontSize: 12,
+    color: '#999',
+    marginLeft: 4,
+  },
+  contactButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f8f9fa',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 12,
   },
   separator: {
     height: 1,
-    backgroundColor: '#f2f2f2',
-    marginVertical: 10,
-    borderRadius: 1,
+    backgroundColor: '#f0f0f0',
+    marginVertical: 4,
   },
-  chipRow: {
-    flexDirection: 'row',
-    marginBottom: 10,
-    gap: 10,
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 60,
   },
-  chipEstado: {
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 5,
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: '#eaeaea',
-    backgroundColor: '#fff',
+  emptyText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#666',
+    marginTop: 16,
+    marginBottom: 8,
   },
-  chipEspecialidad: {
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 5,
-    borderWidth: 1,
-    borderColor: '#eaeaea',
-    backgroundColor: '#fff',
-  },
-  chipText: {
-    fontWeight: '500',
+  emptySubtext: {
     fontSize: 14,
-    color: '#444',
-    fontFamily: 'System',
-    letterSpacing: 0.1,
+    color: '#999',
   },
-  metaRow: {
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '50%',
+    minHeight: '40%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e5e9',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  closeButton: {
+    padding: 4,
+  },
+  modalBody: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  filterSection: {
+    marginVertical: 16,
+  },
+  dropdownContainer: {
+    position: 'relative',
+    zIndex: 1,
+  },
+  dropdownContainerActive: {
+    position: 'relative',
+    zIndex: 9999,
+  },
+  dropdownButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    marginTop: 8,
+    justifyContent: 'space-between',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
   },
-  meta: {
-    color: '#b0b0b0',
+  dropdownButtonActive: {
+    backgroundColor: '#fff',
+    borderColor: '#000',
+    borderWidth: 2,
+  },
+  dropdownContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dropdownTitle: {
+    fontSize: 12,
+    color: '#666',
+    marginRight: 8,
+  },
+  dropdownValue: {
     fontSize: 13,
-    fontFamily: 'System',
-    marginLeft: 2,
+    color: '#333',
+    fontWeight: '600',
+    flex: 1,
+  },
+  dropdownValueActive: {
+    color: '#000',
+  },
+  dropdownPanel: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
+    marginTop: 4,
+    zIndex: 10000,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 20,
+    maxHeight: 300,
+  },
+  dropdownSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  dropdownSearchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#333',
+    marginLeft: 8,
+    paddingVertical: 4,
+  },
+  optionsList: {
+    maxHeight: 200,
+  },
+  dropdownOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  dropdownOptionSelected: {
+    backgroundColor: '#000',
+  },
+  dropdownOptionText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  dropdownOptionTextSelected: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  filterLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  chipContainer: {
+    flexDirection: 'row',
+  },
+  filterChip: {
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
+  },
+  filterChipActive: {
+    backgroundColor: '#000',
+    borderColor: '#000',
+  },
+  filterChipText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  filterChipTextActive: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e1e5e9',
+    gap: 12,
+  },
+  clearButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
+    alignItems: 'center',
+  },
+  clearButtonText: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '600',
+  },
+  applyButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#000',
+    alignItems: 'center',
+  },
+  applyButtonText: {
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: '600',
   },
 }); 

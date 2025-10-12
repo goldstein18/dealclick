@@ -1,7 +1,7 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { Ionicons, FontAwesome } from "@expo/vector-icons";
 
-const PRIMARY_COLOR = "#C35139";
+const PRIMARY_COLOR = "#000";
 
 export default function TabsLayout() {
   return (
