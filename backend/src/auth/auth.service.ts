@@ -63,7 +63,7 @@ export class AuthService {
     }
 
     const user = this.userRepository.create(userData);
-    const savedUser = await this.userRepository.save(user);
+    const savedUser: User = await this.userRepository.save(user) as User;
 
     // Generate token
     return this.generateToken(savedUser);
