@@ -45,4 +45,8 @@ export class RegisterDto {
   @IsString()
   @IsOptional()
   specialties?: string;
+
+  @IsString()
+  @IsOptional()
+  avatar?: string;
 }

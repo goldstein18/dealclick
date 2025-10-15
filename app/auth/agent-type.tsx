@@ -3,7 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { authAPI } from '../../services/api';
+import { authAPI, usersAPI } from '../../services/api';
+import { uploadImage } from '../../services/storage.service';
 
 const PROPERTY_TYPES = [
   { id: 'casas', name: 'Casas', icon: 'home', description: 'Propiedades residenciales' },
@@ -71,7 +72,7 @@ export default function AgentTypeScreen() {
         region: selectedRegion
       });
 
-      // Create account (specialties will be added later via profile update)
+      // Step 1: Create account first (without avatar)
       console.log('Creating account for:', signupData.email);
       
       const response = await authAPI.register({
@@ -87,12 +88,37 @@ export default function AgentTypeScreen() {
         bio: `Agente inmobiliario especializado en ${selectedTypes.map(t => PROPERTY_TYPES.find(pt => pt.id === t)?.name).join(', ')}. Ubicado en ${selectedRegion}.`,
       });
 
-      console.log('✅ Account created successfully with all data');
+      console.log('✅ Account created successfully');
 
-      // Save auth data
+      // Save auth token (needed for uploading avatar)
       await AsyncStorage.setItem('auth_token', response.access_token);
       await AsyncStorage.setItem('user', JSON.stringify(response.user));
-      await AsyncStorage.setItem('currentUser', JSON.stringify(response.user));
+      
+      // Step 2: Upload avatar if provided (now we have a token)
+      let finalUser = response.user;
+      
+      if (signupData.avatar) {
+        try {
+          console.log('Uploading avatar image...');
+          const uploadResult = await uploadImage(signupData.avatar, response.access_token);
+          const avatarUrl = uploadResult.medium;
+          console.log('✅ Avatar uploaded:', avatarUrl);
+          
+          // Step 3: Update user with avatar URL
+          const updatedUser = await usersAPI.update(response.user.id, {
+            avatar: avatarUrl,
+          });
+          
+          finalUser = updatedUser;
+          console.log('✅ Avatar updated in profile');
+        } catch (avatarError) {
+          console.error('Error with avatar, skipping:', avatarError);
+          // Continue without avatar if upload fails
+        }
+      }
+
+      // Save final user data with avatar
+      await AsyncStorage.setItem('currentUser', JSON.stringify(finalUser));
 
       // Clear signup data
       await AsyncStorage.removeItem('signup_data');
