@@ -58,6 +58,11 @@ export class AuthService {
       }
     }
 
+    console.log('Creating user with data:', {
+      ...userData,
+      password: '[HIDDEN]'
+    });
+
     const user = this.userRepository.create(userData);
     await this.userRepository.save(user);
 
@@ -69,6 +74,16 @@ export class AuthService {
     if (!savedUser) {
       throw new Error('Failed to create user');
     }
+
+    console.log('User saved successfully:', {
+      id: savedUser.id,
+      email: savedUser.email,
+      name: savedUser.name,
+      ubicacion: savedUser.ubicacion,
+      specialties: savedUser.specialties,
+      bio: savedUser.bio,
+      company: savedUser.company
+    });
 
     // Generate token
     return this.generateToken(savedUser);
