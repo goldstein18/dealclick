@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function ProfileSetupScreen() {
   const [fullName, setFullName] = useState('');
@@ -11,7 +11,21 @@ export default function ProfileSetupScreen() {
   const [agency, setAgency] = useState('');
   const [phone, setPhone] = useState('');
   const [yearsExperience, setYearsExperience] = useState('');
-  const [birthDate, setBirthDate] = useState(new Date());
+  
+  // Calculate default date (25 years old) and max date (18 years ago)
+  const getDefaultDate = () => {
+    const date = new Date();
+    date.setFullYear(date.getFullYear() - 25);
+    return date;
+  };
+  
+  const getMaxDate = () => {
+    const date = new Date();
+    date.setFullYear(date.getFullYear() - 18);
+    return date;
+  };
+  
+  const [birthDate, setBirthDate] = useState(getDefaultDate());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   const handleContinue = async () => {
@@ -56,10 +70,22 @@ export default function ProfileSetupScreen() {
   };
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(false);
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
     if (selectedDate) {
+      // Validate minimum age (18 years)
+      const maxDate = getMaxDate();
+      if (selectedDate > maxDate) {
+        Alert.alert('Error', 'Debes tener al menos 18 años para registrarte');
+        return;
+      }
       setBirthDate(selectedDate);
     }
+  };
+  
+  const handleDatePickerDone = () => {
+    setShowDatePicker(false);
   };
 
   const formatDate = (date: Date) => {
@@ -116,10 +142,10 @@ export default function ProfileSetupScreen() {
 
           {/* Agency Input */}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Agencia (opcional)</Text>
+            <Text style={styles.label}>Inmobiliaria (opcional)</Text>
             <TextInput
               style={styles.input}
-              placeholder="Nombre de tu agencia"
+              placeholder="Nombre de tu inmobiliaria"
               value={agency}
               onChangeText={setAgency}
               autoCapitalize="words"
@@ -169,15 +195,51 @@ export default function ProfileSetupScreen() {
         </View>
       </ScrollView>
 
-      {/* Date Picker */}
-      {showDatePicker && (
-        <DateTimePicker
-          value={birthDate}
-          mode="date"
-          display="default"
-          onChange={handleDateChange}
-          maximumDate={new Date()}
-        />
+      {/* Date Picker Modal for iOS */}
+      {Platform.OS === 'ios' ? (
+        <Modal
+          visible={showDatePicker}
+          transparent={true}
+          animationType="slide"
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Fecha de nacimiento</Text>
+                <Text style={styles.modalSubtitle}>Debes tener al menos 18 años</Text>
+              </View>
+              
+              <DateTimePicker
+                value={birthDate}
+                mode="date"
+                display="spinner"
+                onChange={handleDateChange}
+                maximumDate={getMaxDate()}
+                minimumDate={new Date(1940, 0, 1)}
+                textColor="#000"
+                locale="es-ES"
+              />
+              
+              <TouchableOpacity 
+                style={styles.modalButton}
+                onPress={handleDatePickerDone}
+              >
+                <Text style={styles.modalButtonText}>Confirmar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      ) : (
+        showDatePicker && (
+          <DateTimePicker
+            value={birthDate}
+            mode="date"
+            display="default"
+            onChange={handleDateChange}
+            maximumDate={getMaxDate()}
+            minimumDate={new Date(1940, 0, 1)}
+          />
+        )
       )}
     </KeyboardAvoidingView>
   );
@@ -271,6 +333,57 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   continueButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 40,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  modalHeader: {
+    paddingTop: 24,
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#666',
+  },
+  modalButton: {
+    backgroundColor: '#000',
+    marginHorizontal: 24,
+    marginTop: 16,
+    paddingVertical: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  modalButtonText: {
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
