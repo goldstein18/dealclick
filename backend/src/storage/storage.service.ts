@@ -32,11 +32,16 @@ export class StorageService {
    */
   private async authorize(): Promise<void> {
     try {
+      this.logger.log('🔑 Attempting B2 authorization...');
+      this.logger.log(`Key ID: ${this.configService.get('B2_APPLICATION_KEY_ID')?.substring(0, 8)}...`);
+      this.logger.log(`Bucket ID: ${this.bucketId}`);
+      
       await this.b2.authorize();
       this.logger.log('✅ Authorized with Backblaze B2');
     } catch (error) {
       this.logger.error('❌ Failed to authorize with B2:', error);
-      throw error;
+      this.logger.error('Check Railway env vars: B2_APPLICATION_KEY_ID, B2_APPLICATION_KEY, B2_BUCKET_ID');
+      throw new Error(`Backblaze B2 authorization failed: ${error.message}`);
     }
   }
 

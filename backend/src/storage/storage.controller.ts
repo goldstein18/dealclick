@@ -25,22 +25,33 @@ export class StorageController {
   async uploadSingle(
     @UploadedFile() file: Express.Multer.File,
   ): Promise<UploadResult> {
-    if (!file) {
-      throw new BadRequestException('No file uploaded');
-    }
+    try {
+      if (!file) {
+        throw new BadRequestException('No file uploaded');
+      }
 
-    // Validate file type
-    if (!file.mimetype.startsWith('image/')) {
-      throw new BadRequestException('Only image files are allowed');
-    }
+      console.log('📤 Received file upload:', {
+        filename: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size
+      });
 
-    // Validate file size (10MB max)
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (file.size > maxSize) {
-      throw new BadRequestException('File size must be less than 10MB');
-    }
+      // Validate file type
+      if (!file.mimetype.startsWith('image/')) {
+        throw new BadRequestException('Only image files are allowed');
+      }
 
-    return this.storageService.uploadImage(file);
+      // Validate file size (10MB max)
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        throw new BadRequestException('File size must be less than 10MB');
+      }
+
+      return await this.storageService.uploadImage(file);
+    } catch (error) {
+      console.error('❌ Storage upload error:', error);
+      throw error;
+    }
   }
 
   /**
