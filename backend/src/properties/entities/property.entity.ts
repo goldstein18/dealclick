@@ -29,7 +29,7 @@ export class Property {
   @Column({ name: 'property_type' })
   propertyType: string; // Casa, Departamento, Oficina, etc.
 
-  @Column({ type: 'simple-array' })
+  @Column({ type: 'text', array: true })
   images: string[];
 
   @Column({ nullable: true })
@@ -50,10 +50,10 @@ export class Property {
   @Column({ default: 'En Venta' })
   status: string;
 
-  @Column({ type: 'simple-array', nullable: true })
+  @Column({ type: 'text', array: true, nullable: true })
   amenities: string[];
 
-  @Column({ type: 'simple-array', nullable: true })
+  @Column({ type: 'text', array: true, nullable: true })
   features: string[];
 
   @Column({ default: 0 })

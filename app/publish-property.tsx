@@ -157,14 +157,14 @@ export default function PublishPropertyScreen() {
       const response = await propertiesAPI.create({
         title,
         description,
-        price: parseFloat(price),
-        type: propertyType,
+        price: price.toString(), // Backend expects string
+        propertyType, // Correct field name
         location,
-        bedrooms: parseInt(beds) || 0,
-        bathrooms: parseInt(baths) || 0,
+        beds: parseInt(beds) || 0, // Backend expects 'beds' not 'bedrooms'
+        baths: parseInt(baths) || 0, // Backend expects 'baths' not 'bathrooms'
         area: parseInt(area) || 0,
         parking: parseInt(parking) || 0,
-        amenities: amenities.join(', '),
+        amenities: amenities.length > 0 ? amenities : undefined, // Send as array or undefined
         images: imageUrls,
       });
 
