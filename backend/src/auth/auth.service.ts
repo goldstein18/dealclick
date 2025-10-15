@@ -137,6 +137,11 @@ export class AuthService {
         role: user.role,
         company: user.company,
         whatsappNumber: user.whatsappNumber,
+        phone: user.phone,
+        bio: user.bio,
+        ubicacion: user.ubicacion,
+        specialties: user.specialties,
+        experience: user.experience,
       },
     };
   }
