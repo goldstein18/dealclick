@@ -31,22 +31,8 @@ export class AuthService {
     // Hash password
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
-    // Process specialties - convert string to array safely
-    let specialtiesArray: string[] | null = null;
-    try {
-      if (registerDto.specialties && registerDto.specialties.trim()) {
-        specialtiesArray = registerDto.specialties
-          .split(',')
-          .map(s => s.trim())
-          .filter(s => s.length > 0);
-      }
-    } catch (err) {
-      console.error('Error processing specialties:', err);
-      specialtiesArray = null;
-    }
-
-    // Create user with explicit field mapping
-    const userData: Partial<User> = {
+    // Create user with explicit field mapping (no specialties processing for now)
+    const userData: any = {
       email: registerDto.email,
       password: hashedPassword,
       name: registerDto.name,
@@ -60,7 +46,21 @@ export class AuthService {
     if (registerDto.company) userData.company = registerDto.company;
     if (registerDto.bio) userData.bio = registerDto.bio;
     if (registerDto.ubicacion) userData.ubicacion = registerDto.ubicacion;
-    if (specialtiesArray && specialtiesArray.length > 0) userData.specialties = specialtiesArray;
+
+    // Process specialties - convert string to array AFTER creating base object
+    if (registerDto.specialties && registerDto.specialties.trim()) {
+      try {
+        const specialtiesArray = registerDto.specialties
+          .split(',')
+          .map(s => s.trim())
+          .filter(s => s.length > 0);
+        if (specialtiesArray.length > 0) {
+          userData.specialties = specialtiesArray;
+        }
+      } catch (err) {
+        console.error('Error processing specialties, skipping:', err);
+      }
+    }
 
     const user = this.userRepository.create(userData);
     await this.userRepository.save(user);
