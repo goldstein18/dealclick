@@ -168,22 +168,39 @@ export default function PublishPropertyScreen() {
         images: imageUrls,
       });
 
-      console.log('Property created successfully:', response);
+      console.log('✅ Property created successfully:', response);
+      console.log('📊 API returned property with ID:', response.id);
+      console.log('📊 Property data sent:', { title, description, price, location, propertyType });
 
-      // Create property data for local context
+      // Create property data for local context using API response
       const propertyDataForContext = {
         id: response.id,
-        title,
-        price: `$${parseFloat(price).toLocaleString()}`,
-        location,
-        image: imageUrls[0] || "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400",
-        beds: parseInt(beds) || 0,
-        baths: parseInt(baths) || 0,
-        area: parseInt(area) || 0
+        title: response.title || title,
+        price: response.price ? `$${parseFloat(response.price).toLocaleString()}` : `$${parseFloat(price).toLocaleString()}`,
+        location: response.location || location,
+        image: (response.images && response.images[0]) || imageUrls[0] || "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400",
+        beds: response.beds || parseInt(beds) || 0,
+        baths: response.baths || parseInt(baths) || 0,
+        area: response.area || parseInt(area) || 0,
       };
+
+      console.log('📊 Adding to feed context:', propertyDataForContext);
 
       // Add to feed context for immediate UI update
       addProperty(propertyDataForContext);
+
+      // Clear form
+      setImages([]);
+      setTitle("");
+      setDescription("");
+      setPrice("");
+      setPropertyType("");
+      setLocation("");
+      setBeds("");
+      setBaths("");
+      setArea("");
+      setParking("");
+      setAmenities([]);
 
       Alert.alert(
         "¡Éxito!",
