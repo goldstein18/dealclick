@@ -50,7 +50,7 @@ export class User {
   @Column({ nullable: true })
   experience: string;
 
-  @Column({ type: 'simple-array', nullable: true })
+  @Column({ type: 'text', array: true, nullable: true })
   specialties: string[];
 
   @Column({ nullable: true })

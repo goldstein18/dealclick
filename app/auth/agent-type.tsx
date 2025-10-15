@@ -71,21 +71,25 @@ export default function AgentTypeScreen() {
         region: selectedRegion
       });
 
+      // Create account (specialties will be added later via profile update)
+      console.log('Creating account for:', signupData.email);
+      
       const response = await authAPI.register({
         email: signupData.email,
         password: signupData.password,
         name: signupData.name,
-        userHandle: signupData.email.split('@')[0], // Generate userHandle from email
+        userHandle: signupData.email.split('@')[0],
         phone: signupData.phone || undefined,
         whatsappNumber: signupData.phone || undefined,
         company: signupData.company || 'Independiente',
         ubicacion: selectedRegion,
         specialties: selectedTypes.join(', '),
+        bio: `Agente inmobiliario especializado en ${selectedTypes.map(t => PROPERTY_TYPES.find(pt => pt.id === t)?.name).join(', ')}. Ubicado en ${selectedRegion}.`,
       });
 
-      console.log('Account created successfully:', response);
+      console.log('✅ Account created successfully with all data');
 
-      // Save auth token and user data
+      // Save auth data
       await AsyncStorage.setItem('auth_token', response.access_token);
       await AsyncStorage.setItem('user', JSON.stringify(response.user));
       await AsyncStorage.setItem('currentUser', JSON.stringify(response.user));

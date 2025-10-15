@@ -46,4 +46,3 @@ export class RegisterDto {
   @IsOptional()
   specialties?: string;
 }
-

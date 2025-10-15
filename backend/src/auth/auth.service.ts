@@ -46,24 +46,29 @@ export class AuthService {
     if (registerDto.company) userData.company = registerDto.company;
     if (registerDto.bio) userData.bio = registerDto.bio;
     if (registerDto.ubicacion) userData.ubicacion = registerDto.ubicacion;
-
-    // Process specialties - convert string to array AFTER creating base object
+    
+    // Process specialties - convert string to array for PostgreSQL array column
     if (registerDto.specialties && registerDto.specialties.trim()) {
-      try {
-        const specialtiesArray = registerDto.specialties
-          .split(',')
-          .map(s => s.trim())
-          .filter(s => s.length > 0);
-        if (specialtiesArray.length > 0) {
-          userData.specialties = specialtiesArray;
-        }
-      } catch (err) {
-        console.error('Error processing specialties, skipping:', err);
+      const specialtiesArray = registerDto.specialties
+        .split(',')
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+      if (specialtiesArray.length > 0) {
+        userData.specialties = specialtiesArray;
       }
     }
 
     const user = this.userRepository.create(userData);
-    const savedUser: User = await this.userRepository.save(user) as User;
+    await this.userRepository.save(user);
+
+    // Fetch the saved user to ensure we have the complete object with ID
+    const savedUser = await this.userRepository.findOne({
+      where: { email: registerDto.email }
+    });
+
+    if (!savedUser) {
+      throw new Error('Failed to create user');
+    }
 
     // Generate token
     return this.generateToken(savedUser);
