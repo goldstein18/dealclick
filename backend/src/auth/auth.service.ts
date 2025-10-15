@@ -31,30 +31,38 @@ export class AuthService {
     // Hash password
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
-    // Process specialties - convert string to array
+    // Process specialties - convert string to array safely
     let specialtiesArray: string[] | null = null;
-    if (registerDto.specialties && registerDto.specialties.trim()) {
-      specialtiesArray = registerDto.specialties
-        .split(',')
-        .map(s => s.trim())
-        .filter(s => s.length > 0);
+    try {
+      if (registerDto.specialties && registerDto.specialties.trim()) {
+        specialtiesArray = registerDto.specialties
+          .split(',')
+          .map(s => s.trim())
+          .filter(s => s.length > 0);
+      }
+    } catch (err) {
+      console.error('Error processing specialties:', err);
+      specialtiesArray = null;
     }
 
-    // Create user
-    const user = this.userRepository.create({
+    // Create user with explicit field mapping
+    const userData: Partial<User> = {
       email: registerDto.email,
       password: hashedPassword,
       name: registerDto.name,
       userHandle: registerDto.userHandle,
-      phone: registerDto.phone,
-      whatsappNumber: registerDto.whatsappNumber,
-      company: registerDto.company,
       role: registerDto.role || 'agent',
-      bio: registerDto.bio,
-      ubicacion: registerDto.ubicacion,
-      specialties: specialtiesArray,
-    });
+    };
 
+    // Add optional fields only if they exist
+    if (registerDto.phone) userData.phone = registerDto.phone;
+    if (registerDto.whatsappNumber) userData.whatsappNumber = registerDto.whatsappNumber;
+    if (registerDto.company) userData.company = registerDto.company;
+    if (registerDto.bio) userData.bio = registerDto.bio;
+    if (registerDto.ubicacion) userData.ubicacion = registerDto.ubicacion;
+    if (specialtiesArray && specialtiesArray.length > 0) userData.specialties = specialtiesArray;
+
+    const user = this.userRepository.create(userData);
     await this.userRepository.save(user);
 
     // Generate token
