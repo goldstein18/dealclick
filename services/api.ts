@@ -102,6 +102,9 @@ export const authAPI = {
   logout: async () => {
     await AsyncStorage.removeItem('auth_token');
     await AsyncStorage.removeItem('user');
+    await AsyncStorage.removeItem('currentUser');
+    await AsyncStorage.removeItem('biometric_email');
+    await AsyncStorage.removeItem('biometric_password');
   },
 
   getMe: async () => {

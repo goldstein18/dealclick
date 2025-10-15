@@ -37,7 +37,37 @@ export default function SignInScreen() {
 
     if (result.success) {
       // Successful biometric authentication
-      router.replace('/(tabs)');
+      try {
+        // Check if we have stored credentials
+        const storedEmail = await AsyncStorage.getItem('biometric_email');
+        const storedPassword = await AsyncStorage.getItem('biometric_password');
+        
+        if (storedEmail && storedPassword) {
+          // Login with stored credentials
+          setLoading(true);
+          const response = await authAPI.login(storedEmail, storedPassword);
+          
+          // Token is automatically saved in authAPI.login
+          await AsyncStorage.setItem('currentUser', JSON.stringify(response.user));
+          
+          Alert.alert(
+            '¡Bienvenido!',
+            `Hola ${response.user.name}`,
+            [{ text: 'OK', onPress: () => router.replace('/(tabs)') }]
+          );
+        } else {
+          // No stored credentials, need to login normally first
+          Alert.alert(
+            'No hay credenciales guardadas',
+            'Por favor inicia sesión con tu email y contraseña primero.'
+          );
+        }
+      } catch (error: any) {
+        console.error('Biometric login error:', error);
+        Alert.alert('Error', 'No se pudo iniciar sesión. Intenta con tu contraseña.');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -64,6 +94,14 @@ export default function SignInScreen() {
       // Token is automatically saved in authAPI.login
       // Save user data for quick access
       await AsyncStorage.setItem('currentUser', JSON.stringify(response.user));
+      
+      // Save credentials for biometric login (if biometric is available)
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+      if (hasHardware && isEnrolled) {
+        await AsyncStorage.setItem('biometric_email', email.toLowerCase().trim());
+        await AsyncStorage.setItem('biometric_password', password);
+      }
       
       Alert.alert(
         '¡Bienvenido!',
