@@ -55,10 +55,14 @@ export class StorageService {
     const fileExtension = file.originalname.split('.').pop();
     const baseFileName = `${fileId}.${fileExtension}`;
 
+    this.logger.log(`📤 Upload started: ${file.originalname} (${file.size} bytes, ${file.mimetype})`);
+
     try {
       // Generate ONLY 1 optimized size for maximum speed
       // Use medium size (800px) for everything - perfect for mobile
+      this.logger.log(`🔧 Processing image...`);
       const medium = await this.processImage(file.buffer, baseFileName, 'medium', 800);
+      this.logger.log(`✅ Image processed: ${medium.contentType}`);
 
       // Upload only 1 file to B2 (super fast!)
       const mediumUrl = await this.uploadToB2(medium.buffer, medium.filename, medium.contentType);
@@ -97,10 +101,13 @@ export class StorageService {
     const filename = `${size}/${baseFileName}`;
 
     try {
-      // Super fast processing: Lower quality, smaller size
-      let sharpInstance = sharp(buffer, { failOnError: false })
-        .webp({ quality: 75, effort: 1 }) // Lower quality & effort = super fast
-        .rotate();
+      // Use JPEG directly - faster and more compatible (especially for HEIF/HEIC from iPhone)
+      let sharpInstance = sharp(buffer, { 
+        failOnError: false,
+        unlimited: true, // Allow large images
+      })
+        .jpeg({ quality: 85, mozjpeg: true }) // High quality JPEG
+        .rotate(); // Auto-rotate based on EXIF
 
       if (width) {
         sharpInstance = sharpInstance.resize(width, null, {
@@ -114,35 +121,12 @@ export class StorageService {
       return {
         buffer: processedBuffer,
         filename,
-        contentType: 'image/webp',
+        contentType: 'image/jpeg',
       };
     } catch (error) {
-      // Fallback: Use JPEG (faster and more compatible than WebP for problematic images)
-      this.logger.warn(`WebP conversion failed, using JPEG fallback: ${error.message}`);
-      
-      try {
-        let sharpInstance = sharp(buffer, { failOnError: false })
-          .jpeg({ quality: 80, mozjpeg: true }) // Fast JPEG with mozjpeg
-          .rotate();
-
-        if (width) {
-          sharpInstance = sharpInstance.resize(width, null, {
-            fit: 'inside',
-            withoutEnlargement: true,
-          });
-        }
-
-        const processedBuffer = await sharpInstance.toBuffer();
-
-        return {
-          buffer: processedBuffer,
-          filename,
-          contentType: 'image/jpeg',
-        };
-      } catch (secondError) {
-        this.logger.error(`Image processing failed completely: ${secondError.message}`);
-        throw new Error(`Unable to process image: ${secondError.message}`);
-      }
+      this.logger.error(`Image processing failed: ${error.message}`);
+      this.logger.error(`Error stack: ${error.stack}`);
+      throw new Error(`Unable to process image: ${error.message}`);
     }
   }
 
