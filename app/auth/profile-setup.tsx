@@ -39,6 +39,18 @@ export default function ProfileSetupScreen() {
       return;
     }
 
+    if (!phone.trim()) {
+      Alert.alert('Error', 'Por favor ingresa tu número de WhatsApp');
+      return;
+    }
+
+    // Validate phone number format (10 digits for Mexico)
+    const cleanPhone = phone.replace(/\D/g, '');
+    if (cleanPhone.length !== 10) {
+      Alert.alert('Error', 'El número debe tener 10 dígitos');
+      return;
+    }
+
     if (!yearsExperience.trim()) {
       Alert.alert('Error', 'Por favor ingresa tus años de experiencia');
       return;
@@ -54,13 +66,17 @@ export default function ProfileSetupScreen() {
 
     const signupData = JSON.parse(signupDataStr);
 
+    // Format phone number for WhatsApp (add +52 prefix for Mexico)
+    const formattedPhone = `+52${cleanPhone}`;
+
     // Add profile data
     await AsyncStorage.setItem('signup_data', JSON.stringify({
       ...signupData,
       name: fullName.trim(),
       city: city.trim(),
       company: agency.trim() || 'Independiente',
-      phone: phone.trim() || undefined,
+      phone: formattedPhone, // Store with +52 prefix
+      whatsapp: formattedPhone, // Same as phone for WhatsApp
       experience: yearsExperience.trim(),
       birthDate: birthDate.toISOString()
     }));
@@ -154,14 +170,19 @@ export default function ProfileSetupScreen() {
 
           {/* Phone Input */}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Teléfono (opcional)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="+52 123 456 7890"
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-            />
+            <Text style={styles.label}>WhatsApp *</Text>
+            <View style={styles.phoneInputContainer}>
+              <Text style={styles.phonePrefix}>+52</Text>
+              <TextInput
+                style={styles.phoneInput}
+                placeholder="123 456 7890"
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+                maxLength={12}
+              />
+            </View>
+            <Text style={styles.helperText}>10 dígitos sin espacios ni guiones</Text>
           </View>
 
           {/* Years of Experience Input */}
@@ -304,6 +325,33 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     fontSize: 16,
     backgroundColor: '#f8f9fa',
+  },
+  phoneInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
+    borderRadius: 12,
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 16,
+  },
+  phonePrefix: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginRight: 8,
+  },
+  phoneInput: {
+    flex: 1,
+    paddingVertical: 16,
+    fontSize: 16,
+    color: '#333',
+  },
+  helperText: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 6,
+    marginLeft: 4,
   },
   dateInput: {
     borderWidth: 1,
