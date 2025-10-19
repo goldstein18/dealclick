@@ -52,12 +52,33 @@ export class StorageService {
     await this.authorize();
 
     const fileId = randomUUID();
-    const fileExtension = file.originalname.split('.').pop();
+    const fileExtension = file.originalname.split('.').pop()?.toLowerCase();
     const baseFileName = `${fileId}.${fileExtension}`;
 
     this.logger.log(`📤 Upload started: ${file.originalname} (${file.size} bytes, ${file.mimetype})`);
 
     try {
+      // Check if it's HEIF/HEIC format
+      const isHEIF = file.mimetype === 'image/heif' || 
+                     file.mimetype === 'image/heic' ||
+                     fileExtension === 'heif' ||
+                     fileExtension === 'heic';
+
+      if (isHEIF) {
+        // HEIF/HEIC not supported by Sharp in Railway - upload original
+        this.logger.warn(`⚠️ HEIF/HEIC detected - uploading original without processing`);
+        const url = await this.uploadToB2(file.buffer, `medium/${baseFileName}`, file.mimetype);
+        
+        this.logger.log(`✅ Uploaded HEIF original: ${baseFileName}`);
+        
+        return {
+          original: url,
+          thumbnail: url,
+          medium: url,
+          large: url,
+        };
+      }
+
       // Generate ONLY 1 optimized size for maximum speed
       // Use medium size (800px) for everything - perfect for mobile
       this.logger.log(`🔧 Processing image...`);
