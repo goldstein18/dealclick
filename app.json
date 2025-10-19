@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "dealclick",
+    "name": "DealClick",
     "slug": "dealclick",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,15 +8,25 @@
     "scheme": "dealclick",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "primaryColor": "#000000",
+    "backgroundColor": "#FFFFFF",
+    "description": "La plataforma líder para agentes inmobiliarios en México. Publica propiedades, encuentra requerimientos y conecta con otros profesionales del sector.",
+    "privacy": "public",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.dealclick.app",
+      "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSFaceIDUsageDescription": "Usamos Face ID para que puedas iniciar sesión de manera rápida y segura."
+        "NSFaceIDUsageDescription": "Usamos Face ID para que puedas iniciar sesión de manera rápida y segura.",
+        "NSPhotoLibraryUsageDescription": "DealClick necesita acceso a tu galería de fotos para que puedas seleccionar imágenes de propiedades y actualizar tu foto de perfil.",
+        "NSCameraUsageDescription": "DealClick necesita acceso a tu cámara para que puedas tomar fotos de propiedades y actualizar tu foto de perfil.",
+        "NSPhotoLibraryAddUsageDescription": "DealClick necesita permiso para guardar fotos de propiedades en tu galería."
       }
     },
     "android": {
+      "package": "com.dealclick.app",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -24,7 +34,10 @@
       "edgeToEdgeEnabled": true,
       "permissions": [
         "USE_BIOMETRIC",
-        "USE_FINGERPRINT"
+        "USE_FINGERPRINT",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "CAMERA"
       ]
     },
     "web": {

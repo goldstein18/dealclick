@@ -1,0 +1,142 @@
+PRIVACY POLICY - DEALCLICK
+
+Last Updated: October 19, 2025
+
+GOLDSTEIN SYSTEMS LTD
+Company Registration Number: 16402156
+Registered Address: 71-75 Shelton Street, Covent Garden, London, United Kingdom, WC2H 9JQ
+
+1. INTRODUCTION
+
+DealClick ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile application.
+
+2. INFORMATION WE COLLECT
+
+Personal Information:
+- Name and contact information (email, phone number, WhatsApp)
+- Profile photo/avatar
+- Company affiliation
+- Professional specialties
+- Geographic location (state/region)
+- Agent type and credentials
+
+Property Information:
+- Property listings and images
+- Property requirements
+- Transaction details
+
+Technical Information:
+- Device information
+- IP address
+- Usage statistics
+- App performance data
+
+3. HOW WE USE YOUR INFORMATION
+
+We use your information to:
+- Provide and maintain our service
+- Create and manage your account
+- Connect you with other real estate professionals
+- Display property listings and requirements
+- Send notifications about relevant opportunities
+- Improve our application
+- Comply with legal obligations
+
+4. DATA STORAGE
+
+Your data is stored securely using:
+- Supabase (PostgreSQL database)
+- Backblaze B2 (image storage)
+- Industry-standard encryption
+
+5. DATA SHARING
+
+We do not sell your personal information. We may share your information with:
+- Other verified agents on the platform (public profile information only)
+- Service providers who assist in operating our application
+- Legal authorities when required by law
+
+6. YOUR RIGHTS
+
+You have the right to:
+- Access your personal data
+- Correct inaccurate data
+- Delete your account and data
+- Opt-out of marketing communications
+- Export your data
+
+7. SECURITY
+
+We implement appropriate security measures to protect your information, including:
+- Encrypted data transmission (HTTPS/SSL)
+- Secure authentication (JWT tokens)
+- Regular security audits
+- Access controls and monitoring
+
+8. BIOMETRIC DATA
+
+If you enable Face ID/Touch ID for login:
+- Biometric data is stored locally on your device only
+- We do not access or store biometric information on our servers
+- You can disable biometric login at any time
+
+9. CAMERA AND PHOTO LIBRARY
+
+We request access to:
+- Camera: To take photos of properties and update your profile picture
+- Photo Library: To select images for property listings and profile
+
+Images are uploaded to our secure storage and are not shared with third parties except as displayed in property listings.
+
+10. CHILDREN'S PRIVACY
+
+Our service is intended for professional real estate agents (18+). We do not knowingly collect information from children under 18.
+
+11. INTERNATIONAL TRANSFERS
+
+Your data may be transferred and processed in countries outside your country of residence, including the United States and United Kingdom. We ensure appropriate safeguards are in place.
+
+12. UPDATES TO THIS POLICY
+
+We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy in the app and updating the "Last Updated" date.
+
+13. CONTACT US
+
+For questions about this Privacy Policy or to exercise your rights, contact us:
+
+WhatsApp: +44 7561 019183
+Email: privacy@dealclick.app
+
+GOLDSTEIN SYSTEMS LTD
+71-75 Shelton Street
+Covent Garden
+London, United Kingdom
+WC2H 9JQ
+
+14. GDPR COMPLIANCE (EU/UK)
+
+For users in the EU/UK:
+- Legal basis for processing: Contract performance, legitimate interests, consent
+- Data Protection Officer: Available upon request
+- Right to lodge a complaint with supervisory authority
+- Data retention: Until account deletion or as required by law
+
+15. CALIFORNIA PRIVACY RIGHTS (CCPA)
+
+California residents have additional rights:
+- Right to know what personal information is collected
+- Right to know if personal information is sold or disclosed
+- Right to say no to the sale of personal information
+- Right to non-discrimination for exercising privacy rights
+
+16. COOKIES AND TRACKING
+
+We use:
+- Essential cookies for app functionality
+- Analytics to improve user experience
+- No third-party advertising cookies
+
+You can control cookie preferences through your device settings.
+
+END OF PRIVACY POLICY
+
