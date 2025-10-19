@@ -56,31 +56,27 @@ export class StorageService {
     const baseFileName = `${fileId}.${fileExtension}`;
 
     try {
-      // Generate different sizes
-      const [original, thumbnail, medium, large] = await Promise.all([
-        this.processImage(file.buffer, baseFileName, 'original', null),
+      // Generate only 2 sizes for faster upload (thumbnail and medium)
+      // Medium will be used for both medium and large/original
+      const [thumbnail, medium] = await Promise.all([
         this.processImage(file.buffer, baseFileName, 'thumbnail', 200),
-        this.processImage(file.buffer, baseFileName, 'medium', 800),
-        this.processImage(file.buffer, baseFileName, 'large', 1920),
+        this.processImage(file.buffer, baseFileName, 'medium', 1200), // Increased to 1200 for better quality
       ]);
 
-      // Upload all sizes to B2
-      const [originalUrl, thumbnailUrl, mediumUrl, largeUrl] = await Promise.all([
-        this.uploadToB2(original.buffer, original.filename, file.mimetype),
+      // Upload only 2 sizes to B2 (much faster!)
+      const [thumbnailUrl, mediumUrl] = await Promise.all([
         this.uploadToB2(thumbnail.buffer, thumbnail.filename, file.mimetype),
         this.uploadToB2(medium.buffer, medium.filename, file.mimetype),
-        this.uploadToB2(large.buffer, large.filename, file.mimetype),
       ]);
 
       this.logger.log(`✅ Uploaded image: ${baseFileName}`);
 
-      // Return direct B2 URLs (f005) instead of converting to CDN
-      // This ensures we always use the correct f005 endpoint
+      // Return direct B2 URLs (f005) - use medium for all larger sizes
       return {
-        original: originalUrl,
+        original: mediumUrl,    // Use medium for original
         thumbnail: thumbnailUrl,
         medium: mediumUrl,
-        large: largeUrl,
+        large: mediumUrl,       // Use medium for large
       };
     } catch (error) {
       this.logger.error('❌ Failed to upload image:', error);
@@ -106,8 +102,9 @@ export class StorageService {
   ): Promise<{ buffer: Buffer; filename: string }> {
     const filename = `${size}/${baseFileName}`;
 
+    // Use lower quality for faster processing (70 is still good quality)
     let sharpInstance = sharp(buffer)
-      .webp({ quality: 85 }) // Convert to WebP for better compression
+      .webp({ quality: 70, effort: 2 }) // Lower quality & effort = faster processing
       .rotate(); // Auto-rotate based on EXIF
 
     if (width) {
