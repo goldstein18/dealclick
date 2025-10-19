@@ -150,7 +150,7 @@ https://dealclick.app/privacy-policy
 ### 🔢 **5. Version Information**
 - ✅ Version: `1.0.0`
 - ✅ Build Number: `1`
-- ✅ Bundle ID: `com.dealclick.app`
+- ✅ Bundle ID: `com.dealclick.mobile`
 
 **Ubicación:** `app.json`
 
