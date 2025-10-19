@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.dealclick.app",
+      "bundleIdentifier": "com.dealclick.mobile",
       "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -21,7 +21,7 @@
       }
     },
     "android": {
-      "package": "com.dealclick.app",
+      "package": "com.dealclick.mobile",
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
