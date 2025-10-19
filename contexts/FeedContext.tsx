@@ -22,12 +22,12 @@ const FeedContext = createContext<FeedContextType | undefined>(undefined);
 // Helper function to transform API data to component format
 const transformPropertyData = (apiProperty: any): PropertyData => ({
   id: apiProperty.id,
-  title: apiProperty.title || `${apiProperty.type} en ${apiProperty.location}`,
-  price: `$${apiProperty.price?.toLocaleString() || 'Consultar'}`,
+  title: apiProperty.title || `${apiProperty.propertyType} en ${apiProperty.location}`,
+  price: apiProperty.price ? `$${parseFloat(apiProperty.price).toLocaleString()}` : 'Consultar',
   location: apiProperty.location || 'Ubicación no especificada',
   image: apiProperty.images?.[0] || "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400",
-  beds: apiProperty.bedrooms || 0,
-  baths: apiProperty.bathrooms || 0,
+  beds: apiProperty.beds || 0,
+  baths: apiProperty.baths || 0,
   area: apiProperty.area || 0
 });
 
@@ -80,6 +80,9 @@ export function FeedProvider({ children }: { children: ReactNode }) {
       // Transform and set the data
       const transformedProperties = propertiesResponse.data?.map(transformPropertyData) || [];
       const transformedRequirements = requirementsResponse.data?.map(transformRequirementData) || [];
+      
+      console.log('Transformed properties:', transformedProperties);
+      console.log('Transformed requirements:', transformedRequirements);
       
       setProperties(transformedProperties);
       setRequirements(transformedRequirements);

@@ -74,11 +74,13 @@ export class StorageService {
 
       this.logger.log(`✅ Uploaded image: ${baseFileName}`);
 
+      // Return direct B2 URLs (f005) instead of converting to CDN
+      // This ensures we always use the correct f005 endpoint
       return {
-        original: this.convertToCdnUrl(originalUrl),
-        thumbnail: this.convertToCdnUrl(thumbnailUrl),
-        medium: this.convertToCdnUrl(mediumUrl),
-        large: this.convertToCdnUrl(largeUrl),
+        original: originalUrl,
+        thumbnail: thumbnailUrl,
+        medium: mediumUrl,
+        large: largeUrl,
       };
     } catch (error) {
       this.logger.error('❌ Failed to upload image:', error);
@@ -148,7 +150,7 @@ export class StorageService {
 
       // Return the native B2 URL (will be converted to CDN URL)
       const bucketName = this.configService.get('B2_BUCKET_NAME');
-      return `https://f000.backblazeb2.com/file/${bucketName}/${fileName}`;
+      return `https://f005.backblazeb2.com/file/${bucketName}/${fileName}`;
     } catch (error) {
       this.logger.error(`❌ Failed to upload to B2: ${fileName}`, error);
       throw error;
@@ -161,7 +163,7 @@ export class StorageService {
   private convertToCdnUrl(b2Url: string): string {
     const bucketName = this.configService.get('B2_BUCKET_NAME');
     return b2Url.replace(
-      `https://f000.backblazeb2.com/file/${bucketName}`,
+      `https://f005.backblazeb2.com/file/${bucketName}`,
       this.cdnUrl,
     );
   }

@@ -111,6 +111,11 @@ export const authAPI = {
     const response = await api.post('/auth/me');
     return response.data;
   },
+
+  getCurrentUser: async () => {
+    const response = await api.post('/auth/me');
+    return response.data;
+  },
 };
 
 // ============================================

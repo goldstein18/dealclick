@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Keyboard, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Keyboard, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { PropertyCard, RequirementCard } from "../../components";
 import { useFeed } from "../../contexts/FeedContext";
 
@@ -11,6 +11,7 @@ export default function FeedScreen() {
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [searchText, setSearchText] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
   
   // Filter states for properties
   const [filtroTipo, setFiltroTipo] = useState('Todos');
@@ -52,6 +53,12 @@ export default function FeedScreen() {
   const handleDropdownToggle = (dropdownName: string) => {
     setOpenDropdown(openDropdown === dropdownName ? null : dropdownName);
     setSearchText('');
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refreshFeed();
+    setRefreshing(false);
   };
 
   const SearchableDropdown = ({ 
@@ -166,7 +173,18 @@ export default function FeedScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#000"
+            colors={["#000"]}
+          />
+        }
+      >
         {loading ? (
           // Loading State
           <View style={styles.loadingContainer}>

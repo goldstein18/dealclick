@@ -1,9 +1,11 @@
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
     Alert,
+    Image,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -13,6 +15,8 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import { usersAPI } from '../services/api';
+import { uploadImage } from '../services/storage.service';
 
 const EMPRESAS = [
   "Century 21",
@@ -28,9 +32,9 @@ export default function ProfileSettingsScreen() {
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [telefono, setTelefono] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [empresa, setEmpresa] = useState("Independiente");
-  const [bio, setBio] = useState("");
-  const [especialidades, setEspecialidades] = useState("");
+  const [avatar, setAvatar] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -48,9 +52,9 @@ export default function ProfileSettingsScreen() {
         setNombre(user.name || "");
         setEmail(user.email || "");
         setTelefono(user.phone || "");
+        setWhatsapp(user.whatsappNumber || user.phone || "");
         setEmpresa(user.company || "Independiente");
-        setBio(user.bio || "");
-        setEspecialidades(user.specialties || "");
+        setAvatar(user.avatar || null);
       }
     } catch (error) {
       console.error('Error loading user data:', error);
@@ -59,41 +63,99 @@ export default function ProfileSettingsScreen() {
     }
   };
 
+  const pickImage = async () => {
+    try {
+      // Request permissions
+      if (Platform.OS !== 'web') {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permisos requeridos', 'Se necesitan permisos para acceder a la galería.');
+          return;
+        }
+      }
+
+      // Launch image picker
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setAvatar(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'No se pudo seleccionar la imagen');
+    }
+  };
+
   const handleSave = async () => {
     try {
       setSaving(true);
       
-      // TODO: Call API to update user profile
-      console.log('Saving profile:', {
-        nombre,
-        email,
-        telefono,
-        empresa,
-        bio,
-        especialidades
+      const userData = await AsyncStorage.getItem('currentUser');
+      if (!userData) {
+        Alert.alert('Error', 'No se encontró información del usuario');
+        return;
+      }
+
+      const user = JSON.parse(userData);
+      
+      console.log('Updating user profile:', user.id);
+
+      let avatarUrl = user.avatar;
+
+      // Upload avatar if it has changed
+      if (avatar && avatar !== user.avatar) {
+        try {
+          console.log('Uploading new avatar...');
+          
+          // Get auth token
+          const token = await AsyncStorage.getItem('auth_token');
+          if (!token) {
+            Alert.alert('Error', 'No se encontró el token de autenticación');
+            return;
+          }
+          
+          const uploadResult = await uploadImage(avatar, token);
+          avatarUrl = uploadResult.medium; // Use medium size for avatar
+          console.log('✅ Avatar uploaded:', avatarUrl);
+        } catch (uploadError) {
+          console.error('Error uploading avatar:', uploadError);
+          Alert.alert('Error', 'No se pudo subir la imagen del avatar');
+          return;
+        }
+      }
+
+      // Update user via API
+      console.log('📤 Sending profile update with avatar:', avatarUrl);
+      const updatedUser = await usersAPI.update(user.id, {
+        name: nombre,
+        email: email,
+        phone: telefono,
+        whatsappNumber: whatsapp,
+        company: empresa,
+        avatar: avatarUrl || undefined,
       });
 
+      console.log('✅ Profile updated successfully');
+      console.log('🖼️ Updated user avatar:', updatedUser.avatar);
+
       // Update local storage
-      const userData = await AsyncStorage.getItem('currentUser');
-      if (userData) {
-        const user = JSON.parse(userData);
-        const updatedUser = {
-          ...user,
-          name: nombre,
-          email,
-          phone: telefono,
-          company: empresa,
-          bio,
-          specialties: especialidades
-        };
-        await AsyncStorage.setItem('currentUser', JSON.stringify(updatedUser));
-      }
+      await AsyncStorage.setItem('currentUser', JSON.stringify(updatedUser));
+      await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+      console.log('💾 Local storage updated');
 
       Alert.alert('Éxito', 'Perfil actualizado correctamente');
       router.back();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving profile:', error);
-      Alert.alert('Error', 'No se pudo actualizar el perfil');
+      Alert.alert(
+        'Error', 
+        error.response?.data?.message || 'No se pudo actualizar el perfil'
+      );
     } finally {
       setSaving(false);
     }
@@ -130,6 +192,21 @@ export default function ProfileSettingsScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Avatar Section */}
+        <View style={styles.avatarSection}>
+          <Text style={styles.sectionTitle}>Foto de Perfil</Text>
+          <TouchableOpacity onPress={pickImage} style={styles.avatarContainer}>
+            <Image
+              source={avatar ? { uri: avatar } : require('../assets/images/frontlogo.png')}
+              style={styles.avatarImage}
+            />
+            <View style={styles.avatarEditButton}>
+              <Ionicons name="camera" size={20} color="#fff" />
+            </View>
+          </TouchableOpacity>
+          <Text style={styles.avatarHint}>Toca para cambiar tu foto de perfil</Text>
+        </View>
+
         {/* Personal Information */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Información Personal</Text>
@@ -145,24 +222,12 @@ export default function ProfileSettingsScreen() {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Biografía</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              placeholder="Cuéntanos sobre ti..."
-              value={bio}
-              onChangeText={setBio}
-              multiline
-              numberOfLines={4}
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Especialidades</Text>
+            <Text style={styles.label}>Empresa</Text>
             <TextInput
               style={styles.input}
-              placeholder="Ej: Residencial, Comercial, Lujo"
-              value={especialidades}
-              onChangeText={setEspecialidades}
+              placeholder="Nombre de tu empresa"
+              value={empresa}
+              onChangeText={setEmpresa}
             />
           </View>
         </View>
@@ -171,76 +236,38 @@ export default function ProfileSettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Información de Contacto</Text>
           
-          <View style={styles.contactItem}>
-            <View style={styles.contactIconContainer}>
-              <Ionicons name="mail" size={20} color="#fff" />
-            </View>
-            <View style={styles.contactInfo}>
-              <Text style={styles.contactLabel}>Email</Text>
-              <TextInput
-                style={styles.contactInput}
-                placeholder="tu@email.com"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-            </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="tu@email.com"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
           </View>
 
-          <View style={styles.contactItem}>
-            <View style={styles.contactIconContainer}>
-              <Ionicons name="call" size={20} color="#fff" />
-            </View>
-            <View style={styles.contactInfo}>
-              <Text style={styles.contactLabel}>Teléfono</Text>
-              <TextInput
-                style={styles.contactInput}
-                placeholder="+52 123 456 7890"
-                value={telefono}
-                onChangeText={setTelefono}
-                keyboardType="phone-pad"
-              />
-            </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Teléfono</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="+52 123 456 7890"
+              value={telefono}
+              onChangeText={setTelefono}
+              keyboardType="phone-pad"
+            />
           </View>
 
-          <View style={styles.contactItem}>
-            <View style={styles.contactIconContainer}>
-              <MaterialIcons name="business" size={20} color="#fff" />
-            </View>
-            <View style={styles.contactInfo}>
-              <Text style={styles.contactLabel}>Empresa</Text>
-              <TextInput
-                style={styles.contactInput}
-                placeholder="Nombre de tu empresa"
-                value={empresa}
-                onChangeText={setEmpresa}
-              />
-            </View>
-          </View>
-        </View>
-
-        {/* Suggested Companies */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Empresas Sugeridas</Text>
-          <View style={styles.chipsContainer}>
-            {EMPRESAS.map((emp, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.chip,
-                  empresa === emp && styles.chipSelected
-                ]}
-                onPress={() => setEmpresa(emp)}
-              >
-                <Text style={[
-                  styles.chipText,
-                  empresa === emp && styles.chipTextSelected
-                ]}>
-                  {emp}
-                </Text>
-              </TouchableOpacity>
-            ))}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>WhatsApp</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="+52 123 456 7890"
+              value={whatsapp}
+              onChangeText={setWhatsapp}
+              keyboardType="phone-pad"
+            />
           </View>
         </View>
 
@@ -393,6 +420,48 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 40,
+  },
+  avatarSection: {
+    paddingHorizontal: 16,
+    paddingVertical: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eff3f4',
+    alignItems: 'center',
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginVertical: 16,
+  },
+  avatarImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 4,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  avatarEditButton: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#fff',
+  },
+  avatarHint: {
+    fontSize: 13,
+    color: '#536471',
+    textAlign: 'center',
+    fontFamily: 'System',
   },
 });
 

@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+    ActivityIndicator,
     Dimensions,
     Image,
     Linking,
@@ -11,70 +12,70 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { propertiesAPI } from "../../services/api";
 
 const { width } = Dimensions.get("window");
-
-// Mock data - Replace with API call using the id param
-const propertyData = {
-  id: "1",
-  title: "Casa Moderna en Las Condes",
-  price: "$85,000,000",
-  location: "Las Condes, Santiago, Chile",
-  description:
-    "Hermosa casa moderna ubicada en una de las zonas más exclusivas de Santiago. Con acabados de lujo, amplios espacios y excelente iluminación natural. Perfect para familias que buscan confort y elegancia.",
-  images: [
-    "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800",
-    "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800",
-    "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800",
-    "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800",
-    "https://images.unsplash.com/photo-1600607687644-aac4c3eac7f4?w=800",
-  ],
-  beds: 4,
-  baths: 3,
-  area: 320,
-  parking: 2,
-  yearBuilt: 2022,
-  propertyType: "Casa",
-  status: "En Venta",
-  amenities: [
-    "Piscina",
-    "Gimnasio",
-    "Jardín",
-    "Terraza",
-    "Seguridad 24/7",
-    "Sala de cine",
-    "Bodega",
-    "Cocina equipada",
-  ],
-  features: [
-    "Pisos de mármol",
-    "Ventanas amplias",
-    "Sistema de calefacción",
-    "Aire acondicionado",
-    "Domótica",
-    "Paneles solares",
-  ],
-  agent: {
-    name: "Ana López",
-    phone: "+56912345678",
-    email: "ana.lopez@remax.cl",
-    image: "https://randomuser.me/api/portraits/women/44.jpg",
-    company: "RE/MAX",
-  },
-};
 
 export default function PropertyDetailScreen() {
   const { id } = useLocalSearchParams();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [propertyData, setPropertyData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchProperty = async () => {
+      if (!id) return;
+      
+      try {
+        setLoading(true);
+        setError(null);
+        const property = await propertiesAPI.getOne(id as string);
+        setPropertyData(property);
+      } catch (err: any) {
+        console.error('Error fetching property:', err);
+        setError('Error al cargar la propiedad');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProperty();
+  }, [id]);
 
   const handleWhatsApp = () => {
+    if (!propertyData) return;
+    
     const message = encodeURIComponent(
       `Hola, estoy interesado en la propiedad: ${propertyData.title}`
     );
+    // Use the user's WhatsApp number if available
+    const phoneNumber = propertyData.user?.whatsappNumber || propertyData.user?.phone || "+56912345678";
     Linking.openURL(
-      `https://wa.me/${propertyData.agent.phone.replace(/\+/g, "")}?text=${message}`
+      `https://wa.me/${phoneNumber.replace(/\+/g, "")}?text=${message}`
     );
   };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#000" />
+        <Text style={styles.loadingText}>Cargando propiedad...</Text>
+      </View>
+    );
+  }
+
+  if (error || !propertyData) {
+    return (
+      <View style={styles.errorContainer}>
+        <Ionicons name="alert-circle-outline" size={48} color="#ff6b6b" />
+        <Text style={styles.errorText}>{error || 'Propiedad no encontrada'}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={() => router.back()}>
+          <Text style={styles.retryButtonText}>Volver</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -92,48 +93,50 @@ export default function PropertyDetailScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Image Gallery */}
-        <View style={styles.imageGallery}>
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onScroll={(e) => {
-              const index = Math.round(
-                e.nativeEvent.contentOffset.x / width
-              );
-              setCurrentImageIndex(index);
-            }}
-            scrollEventThrottle={16}
-          >
-            {propertyData.images.map((image, index) => (
-              <Image
-                key={index}
-                source={{ uri: image }}
-                style={styles.image}
-              />
-            ))}
-          </ScrollView>
-          <View style={styles.pagination}>
-            {propertyData.images.map((_, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.paginationDot,
-                  currentImageIndex === index && styles.paginationDotActive,
-                ]}
-              />
-            ))}
+          {/* Image Gallery */}
+          <View style={styles.imageGallery}>
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onScroll={(e) => {
+                const index = Math.round(
+                  e.nativeEvent.contentOffset.x / width
+                );
+                setCurrentImageIndex(index);
+              }}
+              scrollEventThrottle={16}
+            >
+              {(propertyData.images || []).map((image, index) => (
+                <Image
+                  key={index}
+                  source={{ uri: image }}
+                  style={styles.image}
+                />
+              ))}
+            </ScrollView>
+            <View style={styles.pagination}>
+              {(propertyData.images || []).map((_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.paginationDot,
+                    currentImageIndex === index && styles.paginationDotActive,
+                  ]}
+                />
+              ))}
+            </View>
           </View>
-        </View>
 
         {/* Property Info */}
         <View style={styles.content}>
           {/* Price and Title */}
           <View style={styles.priceSection}>
-            <Text style={styles.price}>{propertyData.price}</Text>
+            <Text style={styles.price}>
+              {propertyData.price ? `$${parseFloat(propertyData.price).toLocaleString()}` : 'Consultar precio'}
+            </Text>
             <View style={styles.statusBadge}>
-              <Text style={styles.statusText}>{propertyData.status}</Text>
+              <Text style={styles.statusText}>{propertyData.status || 'En Venta'}</Text>
             </View>
           </View>
 
@@ -148,22 +151,22 @@ export default function PropertyDetailScreen() {
           <View style={styles.statsContainer}>
             <View style={styles.statBox}>
               <Ionicons name="bed-outline" size={24} color="#000" />
-              <Text style={styles.statNumber}>{propertyData.beds}</Text>
+              <Text style={styles.statNumber}>{propertyData.beds || 0}</Text>
               <Text style={styles.statLabel}>Habitaciones</Text>
             </View>
             <View style={styles.statBox}>
               <Ionicons name="water-outline" size={24} color="#000" />
-              <Text style={styles.statNumber}>{propertyData.baths}</Text>
+              <Text style={styles.statNumber}>{propertyData.baths || 0}</Text>
               <Text style={styles.statLabel}>Baños</Text>
             </View>
             <View style={styles.statBox}>
               <Ionicons name="resize-outline" size={24} color="#000" />
-              <Text style={styles.statNumber}>{propertyData.area}</Text>
+              <Text style={styles.statNumber}>{propertyData.area || 0}</Text>
               <Text style={styles.statLabel}>m²</Text>
             </View>
             <View style={styles.statBox}>
               <Ionicons name="car-outline" size={24} color="#000" />
-              <Text style={styles.statNumber}>{propertyData.parking}</Text>
+              <Text style={styles.statNumber}>{propertyData.parking || 0}</Text>
               <Text style={styles.statLabel}>Estacionamiento</Text>
             </View>
           </View>
@@ -171,7 +174,7 @@ export default function PropertyDetailScreen() {
           {/* Description */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Descripción</Text>
-            <Text style={styles.description}>{propertyData.description}</Text>
+            <Text style={styles.description}>{propertyData.description || 'Sin descripción disponible'}</Text>
           </View>
 
           {/* Property Details */}
@@ -180,19 +183,19 @@ export default function PropertyDetailScreen() {
             <View style={styles.detailsGrid}>
               <View style={styles.detailItem}>
                 <Text style={styles.detailLabel}>Tipo</Text>
-                <Text style={styles.detailValue}>{propertyData.propertyType}</Text>
+                <Text style={styles.detailValue}>{propertyData.propertyType || 'No especificado'}</Text>
               </View>
               <View style={styles.detailItem}>
                 <Text style={styles.detailLabel}>Año de construcción</Text>
-                <Text style={styles.detailValue}>{propertyData.yearBuilt}</Text>
+                <Text style={styles.detailValue}>{propertyData.yearBuilt || 'No especificado'}</Text>
               </View>
               <View style={styles.detailItem}>
                 <Text style={styles.detailLabel}>Área total</Text>
-                <Text style={styles.detailValue}>{propertyData.area} m²</Text>
+                <Text style={styles.detailValue}>{propertyData.area || 0} m²</Text>
               </View>
               <View style={styles.detailItem}>
                 <Text style={styles.detailLabel}>Estado</Text>
-                <Text style={styles.detailValue}>{propertyData.status}</Text>
+                <Text style={styles.detailValue}>{propertyData.status || 'En Venta'}</Text>
               </View>
             </View>
           </View>
@@ -201,12 +204,15 @@ export default function PropertyDetailScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Amenidades</Text>
             <View style={styles.amenitiesContainer}>
-              {propertyData.amenities.map((amenity, index) => (
+              {(propertyData.amenities || []).map((amenity, index) => (
                 <View key={index} style={styles.amenityChip}>
                   <Ionicons name="checkmark-circle" size={16} color="#34C759" />
                   <Text style={styles.amenityText}>{amenity}</Text>
                 </View>
               ))}
+              {(!propertyData.amenities || propertyData.amenities.length === 0) && (
+                <Text style={styles.noDataText}>No hay amenidades especificadas</Text>
+              )}
             </View>
           </View>
 
@@ -214,12 +220,15 @@ export default function PropertyDetailScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Características</Text>
             <View style={styles.featuresContainer}>
-              {propertyData.features.map((feature, index) => (
+              {(propertyData.features || []).map((feature, index) => (
                 <View key={index} style={styles.featureItem}>
                   <Ionicons name="chevron-forward" size={16} color="#666" />
                   <Text style={styles.featureText}>{feature}</Text>
                 </View>
               ))}
+              {(!propertyData.features || propertyData.features.length === 0) && (
+                <Text style={styles.noDataText}>No hay características especificadas</Text>
+              )}
             </View>
           </View>
 
@@ -228,12 +237,12 @@ export default function PropertyDetailScreen() {
             <Text style={styles.sectionTitle}>Agente</Text>
             <View style={styles.agentCard}>
               <Image
-                source={{ uri: propertyData.agent.image }}
+                source={{ uri: propertyData.user?.avatar || "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400" }}
                 style={styles.agentImage}
               />
               <View style={styles.agentInfo}>
-                <Text style={styles.agentName}>{propertyData.agent.name}</Text>
-                <Text style={styles.agentCompany}>{propertyData.agent.company}</Text>
+                <Text style={styles.agentName}>{propertyData.user?.name || 'Agente'}</Text>
+                <Text style={styles.agentCompany}>{propertyData.user?.company || 'Empresa no especificada'}</Text>
               </View>
             </View>
           </View>
@@ -538,6 +547,51 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
+    fontFamily: "System",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: "#666",
+    fontFamily: "System",
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    paddingHorizontal: 20,
+  },
+  errorText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: "#ff6b6b",
+    textAlign: "center",
+    fontFamily: "System",
+  },
+  retryButton: {
+    marginTop: 20,
+    backgroundColor: "#000",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+    fontFamily: "System",
+  },
+  noDataText: {
+    fontSize: 14,
+    color: "#999",
+    fontStyle: "italic",
     fontFamily: "System",
   },
 });

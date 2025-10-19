@@ -1,10 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Animated, Dimensions, FlatList, Image, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Dimensions, FlatList, Image, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useFeed } from '../../contexts/FeedContext';
 import { authAPI, propertiesAPI, requirementsAPI } from '../../services/api';
 
@@ -134,12 +133,9 @@ export default function ProfileScreen() {
   const [image, setImage] = useState<string | null>(null);
   const [nombre, setNombre] = useState("");
   const [bio, setBio] = useState("");
-  const [especialidades, setEspecialidades] = useState("");
   const [email, setEmail] = useState("");
   const [telefono, setTelefono] = useState("");
   const [empresa, setEmpresa] = useState(EMPRESAS[0]);
-  const [editando, setEditando] = useState(false);
-  const [fadeAnim] = useState(new Animated.Value(1));
   const [loading, setLoading] = useState(true);
   const [userHandle, setUserHandle] = useState("");
   
@@ -148,6 +144,7 @@ export default function ProfileScreen() {
   const [userProperties, setUserProperties] = useState<any[]>([]);
   const [userRequirements, setUserRequirements] = useState<any[]>([]);
   const [contentLoading, setContentLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadUserData();
@@ -158,6 +155,7 @@ export default function ProfileScreen() {
   useFocusEffect(
     useCallback(() => {
       loadUserContent();
+      loadUserData(false); // Also refresh user data to get updated avatar (without showing loading screen)
     }, [])
   );
 
@@ -298,9 +296,17 @@ export default function ProfileScreen() {
     );
   };
 
-  const loadUserData = async () => {
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([loadUserData(false), loadUserContent()]);
+    setRefreshing(false);
+  };
+
+  const loadUserData = async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      }
       
       // Check if user is logged in
       const token = await AsyncStorage.getItem('auth_token');
@@ -322,10 +328,43 @@ export default function ProfileScreen() {
         setEmpresa(user.company || "Independiente");
         setBio(user.bio || "");
       }
+
+      // Always fetch fresh user data from server to get updated avatar
+      try {
+        console.log('📡 Fetching fresh user data from server...');
+        const freshUserData = await authAPI.getCurrentUser();
+        if (freshUserData) {
+          console.log('✅ Fresh user data received!');
+          console.log('👤 User name:', freshUserData.name);
+          console.log('🖼️ Avatar URL:', freshUserData.avatar);
+          console.log('📧 Email:', freshUserData.email);
+          
+          setNombre(freshUserData.name || "");
+          setEmail(freshUserData.email || "");
+          setUserHandle(freshUserData.userHandle || "");
+          
+          // Force update avatar with fresh URL
+          const newAvatar = freshUserData.avatar || null;
+          console.log('🔄 Updating avatar state from:', image, 'to:', newAvatar);
+          setImage(newAvatar);
+          
+          setTelefono(freshUserData.phone || "");
+          setEmpresa(freshUserData.company || "Independiente");
+          setBio(freshUserData.bio || "");
+          
+          // Update AsyncStorage with fresh data
+          await AsyncStorage.setItem('currentUser', JSON.stringify(freshUserData));
+          console.log('💾 AsyncStorage updated with fresh data');
+        }
+      } catch (serverError) {
+        console.error('❌ Could not fetch fresh user data:', serverError);
+      }
     } catch (error) {
       console.error('Error loading user data:', error);
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   };
 
@@ -338,42 +377,6 @@ export default function ProfileScreen() {
     }
   };
 
-  const pickImage = async () => {
-    if (Platform.OS !== "web") {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") {
-        alert("Se requieren permisos para acceder a la galería.");
-        return;
-      }
-    }
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      setImage(result.assets[0].uri);
-    }
-  };
-
-  const handleSave = () => {
-    Animated.sequence([
-      Animated.timing(fadeAnim, {
-        toValue: 0.5,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start();
-    
-    setEditando(false);
-    alert("Perfil guardado correctamente");
-  };
 
 
   if (loading) {
@@ -386,7 +389,18 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView 
+      style={styles.container} 
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor="#000"
+          colors={["#000"]}
+        />
+      }
+    >
       {/* Modern Header with Glassmorphism */}
       <View style={styles.headerContainer}>
         <LinearGradient
@@ -415,25 +429,20 @@ export default function ProfileScreen() {
                 >
                   <Ionicons name="settings-outline" size={18} color="#fff" />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.editButton} onPress={() => setEditando(!editando)}>
-                  <Ionicons name={editando ? "checkmark" : "create-outline"} size={18} color="#fff" />
-                </TouchableOpacity>
               </View>
             </View>
             
             <View style={styles.profileSection}>
-              <TouchableOpacity onPress={pickImage} style={styles.avatarContainer}>
+              <View style={styles.avatarContainer}>
                 <View style={styles.avatarGlow} />
                 <Image
-                  source={image ? { uri: image } : require('../../assets/images/frontlogo.png')}
+                  source={image ? { uri: image, cache: 'reload' } : require('../../assets/images/frontlogo.png')}
                   style={styles.avatar}
                   onError={(error) => console.log('Image load error:', error)}
-                  onLoad={() => console.log('Image loaded successfully')}
+                  onLoad={() => console.log('Image loaded successfully:', image)}
+                  key={image || 'default'}
                 />
-                <View style={styles.editAvatarButton}>
-                  <Ionicons name="camera" size={12} color="#fff" />
-                </View>
-              </TouchableOpacity>
+              </View>
               
               <View style={styles.profileInfo}>
                 <Text style={styles.nombre}>{nombre}</Text>
@@ -532,71 +541,6 @@ export default function ProfileScreen() {
         />
       )}
 
-
-      {/* Edit Form */}
-      {editando && (
-        <Animated.View style={[styles.editForm, { opacity: fadeAnim }]}>
-          <Text style={styles.formTitle}>Editar perfil</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Nombre completo"
-            value={nombre}
-            onChangeText={setNombre}
-          />
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Biografía"
-            value={bio}
-            onChangeText={setBio}
-            multiline
-            numberOfLines={4}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Especialidades (separadas por coma)"
-            value={especialidades}
-            onChangeText={setEspecialidades}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Teléfono"
-            value={telefono}
-            onChangeText={setTelefono}
-            keyboardType="phone-pad"
-          />
-          
-          <Text style={styles.inputLabel}>Empresa inmobiliaria</Text>
-          <View style={styles.empresaOptions}>
-            {EMPRESAS.map((e) => (
-              <TouchableOpacity
-                key={e}
-                style={[
-                  styles.empresaOption,
-                  empresa === e && styles.empresaOptionSelected
-                ]}
-                onPress={() => setEmpresa(e)}
-              >
-                <Text style={[
-                  styles.empresaOptionText,
-                  empresa === e && styles.empresaOptionTextSelected
-                ]}>{e}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.saveButtonText}>Guardar cambios</Text>
-          </TouchableOpacity>
-        </Animated.View>
-      )}
-
     </ScrollView>
   );
 }
@@ -673,16 +617,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
   },
-  editButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-  },
   profileSection: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -708,19 +642,6 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     borderWidth: 4,
-    borderColor: '#fff',
-  },
-  editAvatarButton: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#000',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
     borderColor: '#fff',
   },
   nombre: {
@@ -905,84 +826,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
-  },
-  editForm: {
-    backgroundColor: '#fff',
-    marginHorizontal: 20,
-    marginBottom: 16,
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  formTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 16,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#e1e5e9',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    backgroundColor: '#f8f9fa',
-    marginBottom: 16,
-  },
-  textArea: {
-    height: 80,
-    textAlignVertical: 'top',
-  },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  empresaOptions: {
-    marginBottom: 20,
-  },
-  empresaOption: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginBottom: 8,
-    backgroundColor: '#f8f9fa',
-    borderWidth: 1,
-    borderColor: '#e1e5e9',
-  },
-  empresaOptionSelected: {
-    backgroundColor: '#000',
-    borderColor: '#000',
-  },
-  empresaOptionText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  empresaOptionTextSelected: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  saveButton: {
-    backgroundColor: '#000',
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
   },
   viewAllButton: {
     flexDirection: 'row',
