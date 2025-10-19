@@ -12,22 +12,44 @@ const PROPERTY_TYPES = [
   { id: 'renta', name: 'Renta', icon: 'key', description: 'Propiedades en renta' },
 ];
 
-const REGIONS = [
+const ESTADOS = [
+  'Aguascalientes',
+  'Baja California',
+  'Baja California Sur',
+  'Campeche',
+  'Chiapas',
+  'Chihuahua',
   'Ciudad de México',
-  'Guadalajara',
-  'Monterrey',
+  'Coahuila',
+  'Colima',
+  'Durango',
+  'Estado de México',
+  'Guanajuato',
+  'Guerrero',
+  'Hidalgo',
+  'Jalisco',
+  'Michoacán',
+  'Morelos',
+  'Nayarit',
+  'Nuevo León',
+  'Oaxaca',
   'Puebla',
   'Querétaro',
-  'Mérida',
-  'Tijuana',
-  'Cancún',
-  'Otra',
+  'Quintana Roo',
+  'San Luis Potosí',
+  'Sinaloa',
+  'Sonora',
+  'Tabasco',
+  'Tamaulipas',
+  'Tlaxcala',
+  'Veracruz',
+  'Yucatán',
+  'Zacatecas',
 ];
 
 export default function AgentTypeScreen() {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedRegion, setSelectedRegion] = useState('');
-  const [showRegionDropdown, setShowRegionDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const togglePropertyType = (typeId: string) => {
@@ -93,6 +115,10 @@ export default function AgentTypeScreen() {
       // Save auth token (needed for uploading avatar)
       await AsyncStorage.setItem('auth_token', response.access_token);
       await AsyncStorage.setItem('user', JSON.stringify(response.user));
+      
+      // Clear any old biometric credentials to prevent auto-login with wrong account
+      await AsyncStorage.removeItem('biometric_email');
+      await AsyncStorage.removeItem('biometric_password');
       
       // Step 2: Upload avatar if provided (now we have a token)
       let finalUser = response.user;
@@ -197,43 +223,28 @@ export default function AgentTypeScreen() {
             ))}
           </View>
 
-          {/* Region Selection */}
+          {/* Estado Selection */}
           <View style={styles.regionContainer}>
-            <Text style={styles.regionLabel}>Zona principal</Text>
-            <TouchableOpacity 
-              style={styles.regionDropdown}
-              onPress={() => setShowRegionDropdown(!showRegionDropdown)}
-            >
-              <Text style={[
-                styles.regionText,
-                !selectedRegion && styles.regionPlaceholder
-              ]}>
-                {selectedRegion || 'Selecciona tu zona'}
-              </Text>
-              <Ionicons 
-                name={showRegionDropdown ? "chevron-up" : "chevron-down"} 
-                size={20} 
-                color="#666" 
-              />
-            </TouchableOpacity>
-
-            {/* Dropdown */}
-            {showRegionDropdown && (
-              <View style={styles.dropdownContainer}>
-                {REGIONS.map((region) => (
-                  <TouchableOpacity
-                    key={region}
-                    style={styles.dropdownItem}
-                    onPress={() => {
-                      setSelectedRegion(region);
-                      setShowRegionDropdown(false);
-                    }}
-                  >
-                    <Text style={styles.dropdownItemText}>{region}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
+            <Text style={styles.regionLabel}>Estado</Text>
+            <View style={styles.regionsWrapper}>
+              {ESTADOS.map((estado) => (
+                <TouchableOpacity
+                  key={estado}
+                  style={[
+                    styles.regionChip,
+                    selectedRegion === estado && styles.regionChipSelected
+                  ]}
+                  onPress={() => setSelectedRegion(estado)}
+                >
+                  <Text style={[
+                    styles.regionChipText,
+                    selectedRegion === estado && styles.regionChipTextSelected
+                  ]}>
+                    {estado}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
 
           {/* Continue Button */}
@@ -345,53 +356,46 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 8,
+    marginBottom: 16,
   },
-  regionDropdown: {
-    borderWidth: 1,
-    borderColor: '#e1e5e9',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    backgroundColor: '#f8f9fa',
+  regionsWrapper: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 10,
   },
-  regionText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  regionPlaceholder: {
-    color: '#999',
-  },
-  dropdownContainer: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    backgroundColor: '#fff',
-    borderWidth: 1,
+  regionChip: {
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 24,
+    borderWidth: 2,
     borderColor: '#e1e5e9',
-    borderRadius: 12,
-    marginTop: 4,
-    maxHeight: 200,
-    zIndex: 1000,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  regionChipSelected: {
+    backgroundColor: '#000',
+    borderColor: '#000',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
-    elevation: 4,
+    elevation: 3,
+    transform: [{ scale: 1.02 }],
   },
-  dropdownItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+  regionChipText: {
+    fontSize: 15,
+    color: '#666',
+    fontWeight: '600',
+    fontFamily: 'System',
   },
-  dropdownItemText: {
-    fontSize: 16,
-    color: '#333',
+  regionChipTextSelected: {
+    color: '#fff',
+    fontWeight: '700',
   },
   continueButton: {
     backgroundColor: '#e1e5e9',

@@ -454,9 +454,7 @@ export default function ProfileScreen() {
             </View>
           </View>
         </LinearGradient>
-        
       </View>
-
 
       {/* Segment Control - Full Width */}
       <View style={styles.segmentControl}>
@@ -552,7 +550,7 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     position: 'relative',
-    marginBottom: 20,
+    marginBottom: 0,
   },
   headerGradient: {
     paddingTop: 60,

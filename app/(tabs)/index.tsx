@@ -21,7 +21,6 @@ export default function FeedScreen() {
   // Filter states for requirements
   const [filtroEstado, setFiltroEstado] = useState('Todos');
   const [filtroEspecialidad, setFiltroEspecialidad] = useState('Todas');
-  const [filtroEmpresa, setFiltroEmpresa] = useState('Todas');
 
   // Filter data arrays
   const tiposPropiedad = ['Todos', 'Casa', 'Departamento', 'Oficina', 'Local', 'Terreno'];
@@ -38,12 +37,6 @@ export default function FeedScreen() {
   ];
   
   const especialidades = ['Todas', 'Residencial', 'Comercial', 'Industrial', 'Terrenos', 'Oficinas'];
-  const empresas = [
-    'Todas', 'RE/MAX', 'Century 21', 'Keller Williams', 'Engel & Völkers', 
-    'Coldwell Banker', 'Sotheby\'s', 'Berkshire Hathaway', 'Compass', 'Redfin',
-    'Zillow', 'Trulia', 'Realty ONE Group', 'Better Homes and Gardens',
-    'ERA Real Estate', 'Long & Foster', 'Howard Hanna', 'HomeServices of America'
-  ];
 
   const handleSegmentPress = (segment: 'properties' | 'requirements') => {
     console.log('Switching to:', segment);
@@ -308,96 +301,128 @@ export default function FeedScreen() {
 
             <ScrollView 
               style={styles.modalBody}
-              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: 20 }}
             >
               {activeSegment === 'properties' ? (
-                // Property Filters
+                // Property Filters - Beautiful Chip Design
                 <>
                   <View style={styles.filterSection}>
                     <Text style={styles.filterLabel}>Tipo de Propiedad</Text>
-                    <SearchableDropdown
-                      title="Tipo"
-                      value={filtroTipo}
-                      options={tiposPropiedad}
-                      onSelect={setFiltroTipo}
-                      isOpen={openDropdown === 'tipo'}
-                      onToggle={() => handleDropdownToggle('tipo')}
-                    />
+                    <View style={styles.chipsWrapper}>
+                      {tiposPropiedad.map((tipo) => (
+                        <TouchableOpacity
+                          key={tipo}
+                          style={[
+                            styles.modernChip,
+                            filtroTipo === tipo && styles.modernChipActive
+                          ]}
+                          onPress={() => setFiltroTipo(tipo)}
+                        >
+                          <Text style={[
+                            styles.modernChipText,
+                            filtroTipo === tipo && styles.modernChipTextActive
+                          ]}>
+                            {tipo}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
                   </View>
 
                   <View style={styles.filterSection}>
                     <Text style={styles.filterLabel}>Rango de Precio</Text>
-                    <SearchableDropdown
-                      title="Precio"
-                      value={filtroPrecio}
-                      options={rangosPrecio}
-                      onSelect={setFiltroPrecio}
-                      isOpen={openDropdown === 'precio'}
-                      onToggle={() => handleDropdownToggle('precio')}
-                    />
+                    <View style={styles.chipsWrapper}>
+                      {rangosPrecio.map((precio) => (
+                        <TouchableOpacity
+                          key={precio}
+                          style={[
+                            styles.modernChip,
+                            filtroPrecio === precio && styles.modernChipActive
+                          ]}
+                          onPress={() => setFiltroPrecio(precio)}
+                        >
+                          <Text style={[
+                            styles.modernChipText,
+                            filtroPrecio === precio && styles.modernChipTextActive
+                          ]}>
+                            {precio}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
                   </View>
 
                   <View style={styles.filterSection}>
                     <Text style={styles.filterLabel}>Ubicación</Text>
-                    <SearchableDropdown
-                      title="Ubicación"
-                      value={filtroUbicacion}
-                      options={ubicaciones}
-                      onSelect={setFiltroUbicacion}
-                      isOpen={openDropdown === 'ubicacion'}
-                      onToggle={() => handleDropdownToggle('ubicacion')}
-                    />
+                    <View style={styles.chipsWrapper}>
+                      {ubicaciones.map((ubicacion) => (
+                        <TouchableOpacity
+                          key={ubicacion}
+                          style={[
+                            styles.modernChip,
+                            filtroUbicacion === ubicacion && styles.modernChipActive
+                          ]}
+                          onPress={() => setFiltroUbicacion(ubicacion)}
+                        >
+                          <Text style={[
+                            styles.modernChipText,
+                            filtroUbicacion === ubicacion && styles.modernChipTextActive
+                          ]}>
+                            {ubicacion}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
                   </View>
                 </>
               ) : (
-                // Requirements Filters
+                // Requirements Filters - Beautiful Chip Design
                 <>
                   <View style={styles.filterSection}>
                     <Text style={styles.filterLabel}>Estado</Text>
-                    <SearchableDropdown
-                      title="Estado"
-                      value={filtroEstado}
-                      options={estados}
-                      onSelect={setFiltroEstado}
-                      isOpen={openDropdown === 'estado'}
-                      onToggle={() => handleDropdownToggle('estado')}
-                    />
+                    <View style={styles.chipsWrapper}>
+                      {estados.map((estado) => (
+                        <TouchableOpacity
+                          key={estado}
+                          style={[
+                            styles.modernChip,
+                            filtroEstado === estado && styles.modernChipActive
+                          ]}
+                          onPress={() => setFiltroEstado(estado)}
+                        >
+                          <Text style={[
+                            styles.modernChipText,
+                            filtroEstado === estado && styles.modernChipTextActive
+                          ]}>
+                            {estado}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
                   </View>
 
                   <View style={styles.filterSection}>
                     <Text style={styles.filterLabel}>Especialidad</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipContainer}>
+                    <View style={styles.chipsWrapper}>
                       {especialidades.map((especialidad) => (
                         <TouchableOpacity
                           key={especialidad}
                           style={[
-                            styles.filterChip,
-                            filtroEspecialidad === especialidad && styles.filterChipActive
+                            styles.modernChip,
+                            filtroEspecialidad === especialidad && styles.modernChipActive
                           ]}
                           onPress={() => setFiltroEspecialidad(especialidad)}
                         >
                           <Text style={[
-                            styles.filterChipText,
-                            filtroEspecialidad === especialidad && styles.filterChipTextActive
+                            styles.modernChipText,
+                            filtroEspecialidad === especialidad && styles.modernChipTextActive
                           ]}>
                             {especialidad}
                           </Text>
                         </TouchableOpacity>
                       ))}
-                    </ScrollView>
-                  </View>
-
-                  <View style={styles.filterSection}>
-                    <Text style={styles.filterLabel}>Empresa</Text>
-                    <SearchableDropdown
-                      title="Empresa"
-                      value={filtroEmpresa}
-                      options={empresas}
-                      onSelect={setFiltroEmpresa}
-                      isOpen={openDropdown === 'empresa'}
-                      onToggle={() => handleDropdownToggle('empresa')}
-                    />
+                    </View>
                   </View>
                 </>
               )}
@@ -414,7 +439,6 @@ export default function FeedScreen() {
                   } else {
                     setFiltroEstado('Todos');
                     setFiltroEspecialidad('Todas');
-                    setFiltroEmpresa('Todas');
                   }
                 }}
               >
@@ -661,10 +685,15 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '50%',
-    minHeight: '40%',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '85%',
+    minHeight: '70%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 10,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -913,5 +942,46 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
     textAlign: 'center',
+  },
+  // Modern Chip Styles - World-class UX
+  chipsWrapper: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 4,
+  },
+  modernChip: {
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: '#e1e5e9',
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  modernChipActive: {
+    backgroundColor: '#000',
+    borderColor: '#000',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+    transform: [{ scale: 1.02 }],
+  },
+  modernChipText: {
+    fontSize: 15,
+    color: '#666',
+    fontWeight: '600',
+    fontFamily: 'System',
+  },
+  modernChipTextActive: {
+    color: '#fff',
+    fontWeight: '700',
   },
 }); 

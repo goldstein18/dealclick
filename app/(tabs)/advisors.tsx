@@ -29,12 +29,6 @@ const estados = [
 ];
 
 const especialidades = ['Todas', 'Residencial', 'Comercial', 'Industrial', 'Terrenos', 'Oficinas'];
-const empresas = [
-  'Todas', 'RE/MAX', 'Century 21', 'Keller Williams', 'Engel & Völkers', 
-  'Coldwell Banker', 'Sotheby\'s', 'Berkshire Hathaway', 'Compass', 'Redfin',
-  'Zillow', 'Trulia', 'Realty ONE Group', 'Better Homes and Gardens',
-  'ERA Real Estate', 'Long & Foster', 'Howard Hanna', 'HomeServices of America'
-];
 
 function AdvisorItem({ item }: { item: AdvisorData }) {
   return (
@@ -54,11 +48,13 @@ export default function AdvisorsScreen() {
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [searchText, setSearchText] = useState('');
+  const [estadoAccordionOpen, setEstadoAccordionOpen] = useState(false);
   
   // API state
   const [advisors, setAdvisors] = useState<AdvisorData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [allAdvisors, setAllAdvisors] = useState<AdvisorData[]>([]); // Store all advisors for filter extraction
 
   const loadAdvisors = async () => {
     try {
@@ -89,10 +85,39 @@ export default function AdvisorsScreen() {
     }
   };
 
+  // Load all advisors once to get unique companies
+  useEffect(() => {
+    const loadAllAdvisors = async () => {
+      try {
+        const response = await advisorsAPI.getAll({});
+        const transformedAdvisors = response.data?.map(transformAdvisorData) || [];
+        setAllAdvisors(transformedAdvisors);
+      } catch (err) {
+        console.error('Error loading all advisors:', err);
+      }
+    };
+    loadAllAdvisors();
+  }, []);
+
   // Load advisors on mount and when filters change
   useEffect(() => {
     loadAdvisors();
   }, [filtroNombre, filtroEstado, filtroEspecialidad, filtroEmpresa]);
+
+  // Extract unique companies from all advisors
+  const getUniqueEmpresas = () => {
+    const uniqueCompanies = new Set<string>();
+    allAdvisors.forEach(advisor => {
+      if (advisor.empresa) {  // Field is 'empresa' not 'company'
+        uniqueCompanies.add(advisor.empresa);
+      }
+    });
+    const result = ['Todas', ...Array.from(uniqueCompanies).sort()];
+    console.log('🏢 Unique empresas found:', result.length - 1, 'companies:', result);
+    return result;
+  };
+
+  const empresasDinamicas = getUniqueEmpresas();
 
   const handleDropdownToggle = (dropdownName: string) => {
     setOpenDropdown(openDropdown === dropdownName ? null : dropdownName);
@@ -272,57 +297,108 @@ export default function AdvisorsScreen() {
 
             <ScrollView 
               style={styles.modalBody}
-              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: 20 }}
             >
-              {/* Estado Filter */}
+              {/* Estado Filter - Accordion */}
               <View style={styles.filterSection}>
-                <Text style={styles.filterLabel}>Estado</Text>
-                <SearchableDropdown
-                  title="Estado"
-                  value={filtroEstado}
-                  options={estados}
-                  onSelect={setFiltroEstado}
-                  isOpen={openDropdown === 'estado'}
-                  onToggle={() => handleDropdownToggle('estado')}
-                />
+                <TouchableOpacity 
+                  style={styles.accordionHeader}
+                  onPress={() => setEstadoAccordionOpen(!estadoAccordionOpen)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.accordionTitleRow}>
+                    <Text style={styles.filterLabel}>Estado</Text>
+                    {filtroEstado !== 'Todos' && (
+                      <View style={styles.selectedBadge}>
+                        <Text style={styles.selectedBadgeText}>{filtroEstado}</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Ionicons 
+                    name={estadoAccordionOpen ? "chevron-up" : "chevron-down"} 
+                    size={20} 
+                    color="#666" 
+                  />
+                </TouchableOpacity>
+                
+                {estadoAccordionOpen && (
+                  <View style={styles.accordionContent}>
+                    <View style={styles.chipsWrapper}>
+                      {estados.map((estado) => (
+                        <TouchableOpacity
+                          key={estado}
+                          style={[
+                            styles.modernChip,
+                            filtroEstado === estado && styles.modernChipActive
+                          ]}
+                          onPress={() => {
+                            setFiltroEstado(estado);
+                            setEstadoAccordionOpen(false);
+                          }}
+                        >
+                          <Text style={[
+                            styles.modernChipText,
+                            filtroEstado === estado && styles.modernChipTextActive
+                          ]}>
+                            {estado}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                )}
               </View>
 
               {/* Especialidad Filter */}
               <View style={styles.filterSection}>
                 <Text style={styles.filterLabel}>Especialidad</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipContainer}>
+                <View style={styles.chipsWrapper}>
                   {especialidades.map((especialidad) => (
                     <TouchableOpacity
                       key={especialidad}
                       style={[
-                        styles.filterChip,
-                        filtroEspecialidad === especialidad && styles.filterChipActive
+                        styles.modernChip,
+                        filtroEspecialidad === especialidad && styles.modernChipActive
                       ]}
                       onPress={() => setFiltroEspecialidad(especialidad)}
                     >
                       <Text style={[
-                        styles.filterChipText,
-                        filtroEspecialidad === especialidad && styles.filterChipTextActive
+                        styles.modernChipText,
+                        filtroEspecialidad === especialidad && styles.modernChipTextActive
                       ]}>
                         {especialidad}
                       </Text>
                     </TouchableOpacity>
                   ))}
-                </ScrollView>
+                </View>
               </View>
 
               {/* Empresa Filter */}
               <View style={styles.filterSection}>
                 <Text style={styles.filterLabel}>Empresa</Text>
-                <SearchableDropdown
-                  title="Empresa"
-                  value={filtroEmpresa}
-                  options={empresas}
-                  onSelect={setFiltroEmpresa}
-                  isOpen={openDropdown === 'empresa'}
-                  onToggle={() => handleDropdownToggle('empresa')}
-                />
+                <View style={styles.chipsWrapper}>
+                  {empresasDinamicas.map((empresa) => (
+                    <TouchableOpacity
+                      key={empresa}
+                      style={[
+                        styles.modernChip,
+                        filtroEmpresa === empresa && styles.modernChipActive
+                      ]}
+                      onPress={() => setFiltroEmpresa(empresa)}
+                    >
+                      <Text style={[
+                        styles.modernChipText,
+                        filtroEmpresa === empresa && styles.modernChipTextActive
+                      ]}>
+                        {empresa}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                {empresasDinamicas.length <= 1 && (
+                  <Text style={styles.noDataText}>No hay empresas registradas aún</Text>
+                )}
               </View>
             </ScrollView>
 
@@ -515,10 +591,15 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '50%',
-    minHeight: '40%',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '85%',
+    minHeight: '70%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 10,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -748,5 +829,87 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  // Modern Chip Styles - World-class UX
+  chipsWrapper: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 4,
+  },
+  modernChip: {
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: '#e1e5e9',
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  modernChipActive: {
+    backgroundColor: '#000',
+    borderColor: '#000',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+    transform: [{ scale: 1.02 }],
+  },
+  modernChipText: {
+    fontSize: 15,
+    color: '#666',
+    fontWeight: '600',
+    fontFamily: 'System',
+  },
+  modernChipTextActive: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+  // Accordion Styles
+  accordionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
+    marginBottom: 12,
+  },
+  accordionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  accordionContent: {
+    marginTop: -8,
+    marginBottom: 8,
+  },
+  selectedBadge: {
+    backgroundColor: '#000',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  selectedBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  noDataText: {
+    fontSize: 14,
+    color: '#999',
+    fontStyle: 'italic',
+    marginTop: 8,
+    textAlign: 'center',
   },
 }); 

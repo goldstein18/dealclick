@@ -62,6 +62,9 @@ export const authAPI = {
     phone?: string;
     whatsappNumber?: string;
     company?: string;
+    ubicacion?: string;
+    specialties?: string;
+    bio?: string;
   }) => {
     const response = await api.post('/auth/register', data);
     await AsyncStorage.setItem('auth_token', response.data.access_token);
