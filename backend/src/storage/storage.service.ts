@@ -56,27 +56,21 @@ export class StorageService {
     const baseFileName = `${fileId}.${fileExtension}`;
 
     try {
-      // Generate only 2 sizes for faster upload (thumbnail and medium)
-      // Medium will be used for both medium and large/original
-      const [thumbnail, medium] = await Promise.all([
-        this.processImage(file.buffer, baseFileName, 'thumbnail', 200),
-        this.processImage(file.buffer, baseFileName, 'medium', 1200), // Increased to 1200 for better quality
-      ]);
+      // Generate ONLY 1 optimized size for maximum speed
+      // Use medium size (800px) for everything - perfect for mobile
+      const medium = await this.processImage(file.buffer, baseFileName, 'medium', 800);
 
-      // Upload only 2 sizes to B2 (much faster!)
-      const [thumbnailUrl, mediumUrl] = await Promise.all([
-        this.uploadToB2(thumbnail.buffer, thumbnail.filename, file.mimetype),
-        this.uploadToB2(medium.buffer, medium.filename, file.mimetype),
-      ]);
+      // Upload only 1 file to B2 (super fast!)
+      const mediumUrl = await this.uploadToB2(medium.buffer, medium.filename, medium.contentType);
 
       this.logger.log(`✅ Uploaded image: ${baseFileName}`);
 
-      // Return direct B2 URLs (f005) - use medium for all larger sizes
+      // Return same URL for all sizes - super fast, only 1 upload!
       return {
-        original: mediumUrl,    // Use medium for original
-        thumbnail: thumbnailUrl,
+        original: mediumUrl,
+        thumbnail: mediumUrl,
         medium: mediumUrl,
-        large: mediumUrl,       // Use medium for large
+        large: mediumUrl,
       };
     } catch (error) {
       this.logger.error('❌ Failed to upload image:', error);
@@ -99,27 +93,57 @@ export class StorageService {
     baseFileName: string,
     size: string,
     width: number | null,
-  ): Promise<{ buffer: Buffer; filename: string }> {
+  ): Promise<{ buffer: Buffer; filename: string; contentType: string }> {
     const filename = `${size}/${baseFileName}`;
 
-    // Use lower quality for faster processing (70 is still good quality)
-    let sharpInstance = sharp(buffer)
-      .webp({ quality: 70, effort: 2 }) // Lower quality & effort = faster processing
-      .rotate(); // Auto-rotate based on EXIF
+    try {
+      // Super fast processing: Lower quality, smaller size
+      let sharpInstance = sharp(buffer, { failOnError: false })
+        .webp({ quality: 75, effort: 1 }) // Lower quality & effort = super fast
+        .rotate();
 
-    if (width) {
-      sharpInstance = sharpInstance.resize(width, null, {
-        fit: 'inside',
-        withoutEnlargement: true,
-      });
+      if (width) {
+        sharpInstance = sharpInstance.resize(width, null, {
+          fit: 'inside',
+          withoutEnlargement: true,
+        });
+      }
+
+      const processedBuffer = await sharpInstance.toBuffer();
+
+      return {
+        buffer: processedBuffer,
+        filename,
+        contentType: 'image/webp',
+      };
+    } catch (error) {
+      // Fallback: Use JPEG (faster and more compatible than WebP for problematic images)
+      this.logger.warn(`WebP conversion failed, using JPEG fallback: ${error.message}`);
+      
+      try {
+        let sharpInstance = sharp(buffer, { failOnError: false })
+          .jpeg({ quality: 80, mozjpeg: true }) // Fast JPEG with mozjpeg
+          .rotate();
+
+        if (width) {
+          sharpInstance = sharpInstance.resize(width, null, {
+            fit: 'inside',
+            withoutEnlargement: true,
+          });
+        }
+
+        const processedBuffer = await sharpInstance.toBuffer();
+
+        return {
+          buffer: processedBuffer,
+          filename,
+          contentType: 'image/jpeg',
+        };
+      } catch (secondError) {
+        this.logger.error(`Image processing failed completely: ${secondError.message}`);
+        throw new Error(`Unable to process image: ${secondError.message}`);
+      }
     }
-
-    const processedBuffer = await sharpInstance.toBuffer();
-
-    return {
-      buffer: processedBuffer,
-      filename,
-    };
   }
 
   /**
@@ -142,7 +166,7 @@ export class StorageService {
         uploadAuthToken: uploadUrlResponse.data.authorizationToken,
         fileName,
         data: buffer,
-        contentType: 'image/webp', // Always WebP after processing
+        contentType: contentType, // Use the correct content type (webp or jpeg)
       });
 
       // Return the native B2 URL (will be converted to CDN URL)

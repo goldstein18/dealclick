@@ -7,6 +7,7 @@ import {
     Alert,
     Image,
     KeyboardAvoidingView,
+    Linking,
     Platform,
     ScrollView,
     StyleSheet,
@@ -15,7 +16,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-import { usersAPI } from '../services/api';
+import { authAPI, usersAPI } from '../services/api';
 import { uploadImage } from '../services/storage.service';
 
 const EMPRESAS = [
@@ -63,6 +64,62 @@ export default function ProfileSettingsScreen() {
     }
   };
 
+  const handleSupportWhatsApp = () => {
+    const message = encodeURIComponent('Hola, necesito soporte técnico con DealClick');
+    Linking.openURL(`https://wa.me/447561019183?text=${message}`);
+  };
+
+  const handleSecurityWhatsApp = () => {
+    const message = encodeURIComponent('Hola, necesito ayuda con seguridad/contraseña en DealClick');
+    Linking.openURL(`https://wa.me/447561019183?text=${message}`);
+  };
+
+  const handlePrivacy = () => {
+    router.push('/privacy-policy');
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Eliminar Cuenta',
+      '¿Estás seguro de que deseas eliminar tu cuenta? Esta acción no se puede deshacer.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            // TODO: Implement delete account API endpoint
+            Alert.alert('Información', 'Contacta a soporte para eliminar tu cuenta');
+            handleSupportWhatsApp();
+          }
+        }
+      ]
+    );
+  };
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Cerrar Sesión',
+      '¿Estás seguro de que deseas cerrar sesión?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Cerrar Sesión',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await authAPI.logout();
+              router.replace('/auth/welcome');
+            } catch (error) {
+              console.error('Logout error:', error);
+              router.replace('/auth/welcome');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const pickImage = async () => {
     try {
       // Request permissions
@@ -79,7 +136,9 @@ export default function ProfileSettingsScreen() {
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.8,
+        quality: 0.7, // Lower quality = faster upload
+        base64: false,
+        exif: false, // Skip EXIF for faster processing
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
@@ -269,6 +328,81 @@ export default function ProfileSettingsScreen() {
               keyboardType="phone-pad"
             />
           </View>
+        </View>
+
+        {/* Soporte y Ayuda */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Soporte y Ayuda</Text>
+          
+          <TouchableOpacity style={styles.settingItem} onPress={handleSupportWhatsApp}>
+            <View style={styles.settingIconContainer}>
+              <Ionicons name="help-circle-outline" size={22} color="#000" />
+            </View>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingTitle}>Soporte Técnico</Text>
+              <Text style={styles.settingSubtitle}>Contacta con nosotros vía WhatsApp</Text>
+            </View>
+            <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Seguridad */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Seguridad</Text>
+          
+          <TouchableOpacity style={styles.settingItem} onPress={handleSecurityWhatsApp}>
+            <View style={styles.settingIconContainer}>
+              <Ionicons name="lock-closed-outline" size={22} color="#000" />
+            </View>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingTitle}>Cambiar Contraseña</Text>
+              <Text style={styles.settingSubtitle}>Solicita cambio de contraseña</Text>
+            </View>
+            <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Privacidad */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Legal</Text>
+          
+          <TouchableOpacity style={styles.settingItem} onPress={handlePrivacy}>
+            <View style={styles.settingIconContainer}>
+              <Ionicons name="shield-checkmark-outline" size={22} color="#000" />
+            </View>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingTitle}>Privacidad</Text>
+              <Text style={styles.settingSubtitle}>Política de privacidad</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#cfd9de" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Zona Peligrosa */}
+        <View style={styles.section}>
+          <Text style={styles.dangerSectionTitle}>Zona Peligrosa</Text>
+          
+          <TouchableOpacity style={styles.settingItem} onPress={handleLogout}>
+            <View style={styles.settingIconContainer}>
+              <Ionicons name="log-out-outline" size={22} color="#ff6b6b" />
+            </View>
+            <View style={styles.settingContent}>
+              <Text style={[styles.settingTitle, styles.dangerText]}>Cerrar Sesión</Text>
+              <Text style={styles.settingSubtitle}>Salir de tu cuenta</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#cfd9de" />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.settingItem} onPress={handleDeleteAccount}>
+            <View style={styles.settingIconContainer}>
+              <Ionicons name="trash-outline" size={22} color="#ff3b30" />
+            </View>
+            <View style={styles.settingContent}>
+              <Text style={[styles.settingTitle, styles.dangerText]}>Eliminar Cuenta</Text>
+              <Text style={styles.settingSubtitle}>Eliminar permanentemente tu cuenta</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#cfd9de" />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.bottomSpacing} />
@@ -462,6 +596,47 @@ const styles = StyleSheet.create({
     color: '#536471',
     textAlign: 'center',
     fontFamily: 'System',
+  },
+  settingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eff3f4',
+  },
+  settingIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f7f9f9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  settingContent: {
+    flex: 1,
+  },
+  settingTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#0f1419',
+    marginBottom: 2,
+    fontFamily: 'System',
+  },
+  settingSubtitle: {
+    fontSize: 13,
+    color: '#536471',
+    fontFamily: 'System',
+  },
+  dangerSectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#ff3b30',
+    marginBottom: 16,
+    fontFamily: 'System',
+  },
+  dangerText: {
+    color: '#ff3b30',
   },
 });
 

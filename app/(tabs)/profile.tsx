@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Dimensions, FlatList, Image, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Dimensions, FlatList, Image, Linking, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useFeed } from '../../contexts/FeedContext';
 import { authAPI, propertiesAPI, requirementsAPI } from '../../services/api';
 
@@ -368,13 +368,9 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await authAPI.logout();
-      router.replace('/auth/welcome');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+  const handleSupportWhatsApp = () => {
+    const message = encodeURIComponent('Hola, necesito soporte técnico con DealClick');
+    Linking.openURL(`https://wa.me/447561019183?text=${message}`);
   };
 
 
@@ -418,10 +414,10 @@ export default function ProfileScreen() {
               </View>
               <View style={styles.headerButtons}>
                 <TouchableOpacity 
-                  style={styles.logoutButton} 
-                  onPress={handleLogout}
+                  style={styles.supportButton} 
+                  onPress={handleSupportWhatsApp}
                 >
-                  <Ionicons name="log-out-outline" size={18} color="#fff" />
+                  <Ionicons name="help-circle-outline" size={18} color="#fff" />
                 </TouchableOpacity>
                 <TouchableOpacity 
                   style={styles.settingsButton} 
@@ -595,15 +591,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
-  logoutButton: {
+  supportButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: 'rgba(37, 211, 102, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: 'rgba(37, 211, 102, 0.3)',
   },
   settingsButton: {
     width: 40,

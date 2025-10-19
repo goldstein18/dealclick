@@ -46,7 +46,9 @@ export default function UploadPhotoScreen() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.8,
+      quality: 0.7, // Lower quality = faster upload
+      base64: false,
+      exif: false, // Skip EXIF for faster processing
     });
 
     if (!result.canceled && result.assets && result.assets.length > 0) {

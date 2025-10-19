@@ -63,7 +63,9 @@ export default function PublishPropertyScreen() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
       aspect: [16, 9],
-      quality: 0.8,
+      quality: 0.7, // Lower quality = faster upload
+      base64: false,
+      exif: false, // Skip EXIF data for faster processing
     });
 
     if (!result.canceled) {

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AdvisorsModule } from './advisors/advisors.module';
+import { AppController } from './app/app.controller';
 import { AuthModule } from './auth/auth.module';
 import { PropertiesModule } from './properties/properties.module';
 import { RequirementsModule } from './requirements/requirements.module';
@@ -38,6 +39,7 @@ import { UsersModule } from './users/users.module';
     AdvisorsModule,
     StorageModule,
   ],
+  controllers: [AppController],
 })
 export class AppModule {}
 

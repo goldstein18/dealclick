@@ -160,12 +160,18 @@ export default function CreateAccountScreen() {
           </TouchableOpacity>
 
           {/* Terms */}
-          <Text style={styles.termsText}>
-            Al continuar, aceptas nuestros{' '}
-            <Text style={styles.termsLink}>Términos y Condiciones</Text>
-            {' '}y{' '}
-            <Text style={styles.termsLink}>Política de Privacidad</Text>
-          </Text>
+          <View style={styles.termsContainer}>
+            <Text style={styles.termsText}>
+              Al continuar, aceptas nuestros{' '}
+            </Text>
+            <TouchableOpacity onPress={() => router.push('/privacy-policy')}>
+              <Text style={styles.termsLink}>Términos y Condiciones</Text>
+            </TouchableOpacity>
+            <Text style={styles.termsText}>{' '}y{' '}</Text>
+            <TouchableOpacity onPress={() => router.push('/privacy-policy')}>
+              <Text style={styles.termsLink}>Política de Privacidad</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -268,16 +274,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'System',
   },
+  termsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
   termsText: {
     fontSize: 14,
     color: '#666',
-    textAlign: 'center',
     lineHeight: 20,
     fontFamily: 'System',
   },
   termsLink: {
+    fontSize: 14,
     color: '#000',
     fontWeight: '600',
     fontFamily: 'System',
+    textDecorationLine: 'underline',
   },
 }); 
