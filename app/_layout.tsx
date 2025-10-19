@@ -7,6 +7,25 @@ import { FeedProvider } from '../contexts/FeedContext';
 import { API_BASE_URL } from '../services/api';
 import ForceUpdateScreen from './force-update';
 
+/**
+ * Compare two semantic versions (e.g., "1.2.3" vs "1.2.4")
+ * Returns: -1 if v1 < v2, 0 if equal, 1 if v1 > v2
+ */
+function compareVersions(v1: string, v2: string): number {
+  const parts1 = v1.split('.').map(Number);
+  const parts2 = v2.split('.').map(Number);
+  
+  for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+    const part1 = parts1[i] || 0;
+    const part2 = parts2[i] || 0;
+    
+    if (part1 < part2) return -1;
+    if (part1 > part2) return 1;
+  }
+  
+  return 0;
+}
+
 export default function RootLayout() {
   const [isChecking, setIsChecking] = useState(true);
   const [updateRequired, setUpdateRequired] = useState(false);
@@ -19,12 +38,26 @@ export default function RootLayout() {
         const response = await fetch(`${API_BASE_URL}/version`);
         const versionData = await response.json();
         
-        console.log('Current version:', APP_VERSION);
-        console.log('Minimum version required:', versionData.minimumVersion);
-        console.log('Update required:', versionData.updateRequired);
+        console.log('📱 Current app version:', APP_VERSION);
+        console.log('☁️ Latest version:', versionData.currentVersion);
+        console.log('⚠️ Minimum version required:', versionData.minimumVersion);
+        console.log('🔒 Force update enabled:', versionData.updateRequired);
         
-        // Check if update is required
-        if (versionData.updateRequired) {
+        // Compare versions: Check if current version is less than minimum required
+        const isOutdated = compareVersions(APP_VERSION, versionData.minimumVersion) < 0;
+        const forceUpdateEnabled = versionData.updateRequired;
+        
+        console.log('🔍 Version comparison:', {
+          current: APP_VERSION,
+          minimum: versionData.minimumVersion,
+          isOutdated,
+          shouldUpdate: forceUpdateEnabled || isOutdated
+        });
+        
+        // Show update screen if:
+        // 1. Force update is enabled from backend, OR
+        // 2. User's version is lower than minimum required
+        if (forceUpdateEnabled || isOutdated) {
           setUpdateRequired(true);
           setUpdateInfo(versionData);
           setIsChecking(false);
