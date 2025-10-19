@@ -8,10 +8,6 @@
     "scheme": "dealclick",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "primaryColor": "#000000",
-    "backgroundColor": "#FFFFFF",
-    "description": "La plataforma líder para agentes inmobiliarios en México. Publica propiedades, encuentra requerimientos y conecta con otros profesionales del sector.",
-    "privacy": "public",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.dealclick.app",
