@@ -10,7 +10,7 @@
 
 ### Paso 2: Agrega las Variables de Entorno
 
-Agrega estas 4 variables nuevas:
+Agrega estas 4 variables uevas:
 
 ```
 FORCE_UPDATE=true
